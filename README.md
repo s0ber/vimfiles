@@ -13,6 +13,7 @@ git remote add s0ber git@github.com:s0ber/vimfiles.git
 Link your .vimrc to .vim/.vimrc.
 
 ```
+cd ~
 ln -s ./.vim/.vimrc .vimrc
 ```
 
