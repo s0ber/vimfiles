@@ -6,6 +6,8 @@ Clone this repo from your home path.
 ```
 cd ~
 git clone git@github.com:s0ber/vimfiles.git .vim
+cd .vim
+git remote add s0ber git@github.com:s0ber/vimfiles.git
 ```
 
 Link your .vimrc to .vim/.vimrc.
@@ -28,4 +30,11 @@ Then compile c extension for **ctrlp-cmatcher**:
 apt-get install python-dev
 cd ~/.vim/bundle/ctrlp-cmatcher/
 ./install.sh
+```
+
+### Get latest version
+
+```
+cd ~/.vim
+git pull s0ber master
 ```
