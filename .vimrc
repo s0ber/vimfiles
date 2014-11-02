@@ -221,7 +221,7 @@ if has("gui_running")
   set showtabline=2
 
   " Make MacVim nicer
-  set transparency=8
+  set transparency=11
 endif
 
 cmap C :let @/=""
