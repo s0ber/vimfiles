@@ -29,8 +29,6 @@ Install Ag (a.k.a SilverSearch).
 sudo apt-get install silversearcher-ag
 ```
 
-To make everything work, install all packages (this will be suggested when you first time opening vim).
-
 Then compile c extension for **ctrlp-cmatcher**:
 
 ```
@@ -39,7 +37,9 @@ cd ~/.vim/bundle/ctrlp-cmatcher/
 ./install.sh
 ```
 
-### Get latest version
+To make everything work, install all packages (this will be suggested when you first time opening vim).
+
+#### Updating with latest version
 
 ```
 cd ~/.vim
