@@ -28,7 +28,7 @@ To make everything work, install all packages (this will be suggested when you f
 Then compile c extension for **ctrlp-cmatcher**:
 
 ```
-apt-get install python-dev
+sudo apt-get install python-dev
 cd ~/.vim/bundle/ctrlp-cmatcher/
 ./install.sh
 ```
