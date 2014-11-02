@@ -14,6 +14,12 @@ Link your .vimrc to .vim/.vimrc.
 ln -s ./.vim/.vimrc .vimrc
 ```
 
+Install NeoBundle.
+
+```
+curl https://raw.githubusercontent.com/Shougo/neobundle.vim/master/bin/install.sh | sh
+```
+
 To make everything work, install all packages (this will be suggested when you first time opening vim).
 
 Then compile c extension for **ctrlp-cmatcher**:
