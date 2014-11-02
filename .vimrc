@@ -223,3 +223,6 @@ if has("gui_running")
   " Make MacVim nicer
   set transparency=8
 endif
+
+cmap C :let @/=""
+
