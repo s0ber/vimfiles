@@ -89,6 +89,7 @@ set undofile             " tell it to use an undo file
 set undodir=~/.vim/undo  " set a directory to store the undo history
 set wildmenu             " better completion for cmd mode
 set nowritebackup        " save file only once
+set synmaxcol=300
 
 " Indentation
 set smartindent
