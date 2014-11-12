@@ -72,7 +72,7 @@ let g:rooter_manual_only = 1  " do not switch CtrlP root
 
 set linespace=1          " increase space between lines
 set number               " show line numbers
-set cursorline           " highlight current line
+" set cursorline           " highlight current line
 set lazyredraw           " faster scrolling
 set noswapfile           " no *.swp artifacts
 set scrolloff=5          " Keep at least 5 lines visible when scrolling
