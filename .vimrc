@@ -68,8 +68,6 @@ runtime! plugin/sensible.vim
 
 let g:airline_right_sep = '◀'  " airline separators
 
-let g:rooter_manual_only = 1  " do not switch CtrlP root
-
 set linespace=1          " increase space between lines
 set number               " show line numbers
 " set cursorline           " highlight current line
@@ -138,6 +136,7 @@ autocmd FileType ruby
 let g:ctrlp_switch_buffer = 'Et'
 let g:ctrlp_match_func  = {'match' : 'matcher#cmatch'}
 let g:ctrlp_user_command = 'ag %s --files-with-matches --nocolor -g ""'
+let g:ctrlp_working_path_mode = 'rw'
 nmap <Tab> :CtrlPBuffer<Cr>
 nmap cp :CtrlPCmdPalette<Cr>
 
@@ -152,6 +151,7 @@ let g:multi_cursor_exit_from_insert_mode = 0
 " let g:NERDTreeWinPos   = 'right'
 let g:NERDTreeWinSize  = 30
 let g:NERDTreeMinimalUI = 1
+let g:NERDTreeChDirMode = 2
 let NERDTreeIgnore     = ['^tags$', '\.DS_Store$']
 let NERDTreeShowHidden = 0
 let g:nerdtree_tabs_smart_startup_focus = 2
@@ -225,5 +225,5 @@ if has("gui_running")
   set transparency=11
 endif
 
-cmap C :let @/=""
+nnoremap <CR> :noh<CR><CR>
 
