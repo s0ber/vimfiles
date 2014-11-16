@@ -138,7 +138,7 @@ let g:ctrlp_match_func  = {'match' : 'matcher#cmatch'}
 let g:ctrlp_user_command = 'ag %s --files-with-matches --nocolor -g ""'
 let g:ctrlp_working_path_mode = 'rw'
 nmap <Tab> :CtrlPBuffer<Cr>
-nmap cp :CtrlPCmdPalette<Cr>
+" nmap cp :CtrlPCmdPalette<Cr>
 
 " strip trailing whitespaces
 let g:DeleteTrailingWhitespace = 1
@@ -225,5 +225,7 @@ if has("gui_running")
   set transparency=11
 endif
 
-nnoremap <CR> :noh<CR><CR>
+nnoremap <CR> :noh<CR>
 
+" copy current file path to register
+nmap cp :let @+ = expand("%")<CR>
