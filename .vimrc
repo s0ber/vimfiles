@@ -136,7 +136,7 @@ autocmd FileType ruby
 let g:ctrlp_switch_buffer = 'Et'
 let g:ctrlp_match_func  = {'match' : 'matcher#cmatch'}
 let g:ctrlp_user_command = 'ag %s --files-with-matches --nocolor -g ""'
-let g:ctrlp_working_path_mode = 'ra'
+let g:ctrlp_working_path_mode = 'rw'
 nmap <Tab> :CtrlPBuffer<Cr>
 nmap cp :CtrlPCmdPalette<Cr>
 
