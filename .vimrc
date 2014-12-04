@@ -97,6 +97,8 @@ set expandtab
 set backspace=2
 let g:indentLine_char = '│'
 
+set modifiable
+
 " Open new split panes to right and bottom, which feels more natural
 set splitbelow
 set splitright
@@ -229,3 +231,4 @@ nnoremap <CR> :noh<CR>
 
 " copy current file path to register
 nmap cp :let @+ = expand("%")<CR>
+nmap cP :let @+ = expand("%:p")<CR>
