@@ -30,6 +30,7 @@ NeoBundle 'rking/ag.vim'
 NeoBundle 'kien/ctrlp.vim'               " fuzzy file search
 NeoBundle 'JazzCore/ctrlp-cmatcher'      " faster and better matcher for CtrlP, requires installation
 NeoBundle 'fisadev/vim-ctrlp-cmdpalette' " fuzzy command search
+NeoBundle 'd11wtq/ctrlp_bdelete.vim'     " allow to remove buffers via CtrlP prompt
 
 " files tree management
 NeoBundle 'scrooloose/nerdtree'          " project tree navigation
@@ -126,6 +127,7 @@ let g:ctrlp_prompt_mappings = {
   \ 'PrtInsert("c")': ['<c-p>'],
   \ 'AcceptSelection("e")': ['<c-o>', '<cr>']
   \ }
+call ctrlp_bdelete#init()
 
 " strip trailing whitespaces
 let g:DeleteTrailingWhitespace = 1
