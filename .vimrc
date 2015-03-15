@@ -202,6 +202,10 @@ nnoremap <CR> :noh<CR>
 nmap cp :let @+ = expand("%")<CR>
 nmap cP :let @+ = expand("%:p")<CR>
 
+" add empty line by pressing enter without entering insert mode
+nnoremap <C-J> m`o<Esc>``
+nnoremap <C-K> m`O<Esc>``
+
 " keep cursor on current position, when using *
 nnoremap * y*
 
