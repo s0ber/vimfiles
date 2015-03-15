@@ -24,9 +24,6 @@ NeoBundle 'DeleteTrailingWhitespace'     " remove trailing whitespaces
 NeoBundle 'terryma/vim-multiple-cursors' " sublime-inspired multiple cursors
 NeoBundle 'tpope/vim-endwise'            " automatically end code blocks
 
-" tabs
-NeoBundle 'Yggdroot/indentLine'          " indentation guides
-
 " integration with ag
 NeoBundle 'rking/ag.vim'
 
@@ -37,21 +34,15 @@ NeoBundle 'fisadev/vim-ctrlp-cmdpalette' " fuzzy command search
 
 " files tree management
 NeoBundle 'scrooloose/nerdtree'          " project tree navigation
-NeoBundle 'jistr/vim-nerdtree-tabs'      " keep NERDTree open in tabs
-NeoBundle 'taiansu/nerdtree-ag'          " search folder from NERDTree
-
-" panes
-NeoBundle 't9md/vim-choosewin'           " interactive panes switching
 
 " filetypes support
-NeoBundle 'kchmck/vim-coffee-script'     " CoffeeScript support
-NeoBundle 'vim-ruby/vim-ruby'            " use latest vim-ruby
+NeoBundle 'kchmck/vim-coffee-script'     " support for coffeescript
+NeoBundle 'vim-ruby/vim-ruby'            " support for ruby (always use latest vim-ruby)
 NeoBundle 'tpope/vim-haml'               " support for haml
 NeoBundle 'slim-template/vim-slim'       " support for slim
 NeoBundle 'othree/html5.vim'             " support for html5
 
 " workspace
-NeoBundle 'airblade/vim-rooter'          " automatic working directory update
 NeoBundle 'vim-scripts/mru.vim'
 
 call neobundle#end()
@@ -82,7 +73,6 @@ set autowrite            " Automatically :write before running commands
 set exrc                 " enable per-directory .vimrc files
 set secure               " disable unsafe commands in local .vimrc files
 set history=50           " history size
-" set foldcolumn=1         " increase vsplits margin
 set undofile             " tell it to use an undo file
 set undodir=~/.vim/undo  " set a directory to store the undo history
 set wildmenu             " better completion for cmd mode
@@ -95,7 +85,6 @@ set tabstop=2
 set shiftwidth=2
 set expandtab
 set backspace=2
-let g:indentLine_char = '│'
 
 set modifiable
 
@@ -119,10 +108,6 @@ let mapleader = ','
 let g:agprg='ag --smart-case --column'
 nmap <Leader>ag :Ag!<Space>
 
-" Use very magic
-" nnoremap / /\v
-" cnoremap %s/ %s/\v
-
 " save airline bar when reopening vim
 set laststatus=2
 
@@ -138,9 +123,12 @@ autocmd FileType ruby
 let g:ctrlp_switch_buffer = 'Et'
 let g:ctrlp_match_func  = {'match' : 'matcher#cmatch'}
 let g:ctrlp_user_command = 'ag %s --files-with-matches --nocolor -g ""'
-let g:ctrlp_working_path_mode = 'rw'
+let g:ctrlp_working_path_mode = 'a'
 nmap <Tab> :CtrlPBuffer<Cr>
-" nmap cp :CtrlPCmdPalette<Cr>
+let g:ctrlp_prompt_mappings = {
+  \ 'PrtInsert("c")': ['<c-p>'],
+  \ 'AcceptSelection("e")': ['<c-o>', '<cr>']
+  \ }
 
 " strip trailing whitespaces
 let g:DeleteTrailingWhitespace = 1
@@ -156,20 +144,11 @@ let g:NERDTreeMinimalUI = 1
 let g:NERDTreeChDirMode = 2
 let NERDTreeIgnore     = ['^tags$', '\.DS_Store$']
 let NERDTreeShowHidden = 0
-let g:nerdtree_tabs_smart_startup_focus = 2
-autocmd vimenter * if !argc() | NERDTree | endif
-let g:nerdtree_tabs_open_on_console_startup = 2
-let g:nerdtree_tabs_open_on_gui_startup = 2
+" autocmd vimenter * if !argc() | NERDTree | endif
 
 " NERDTree
-nmap <silent> <Leader>on :NERDTreeTabsToggle<Cr><C-w>=
+nmap <silent> <Leader>on :NERDTreeToggle<Cr><C-w>=
 nmap <silent> <Leader>of :NERDTreeFind<Cr><C-w>=
-
-" ChooseWin
-let g:choosewin_overlay_enable = 1
-let g:choosewin_statusline_replace = 0
-let g:choosewin_blink_on_land = 0
-nmap <Space> <Plug>(choosewin)
 
 " autocomplete css
 autocmd FileType css set omnifunc=csscomplete#CompleteCSS
@@ -203,13 +182,13 @@ nmap <C-j> <C-w>j
 nmap <C-k> <C-w>k
 nmap <C-l> <C-w>l
 
-" Cursor customization
-set guicursor+=a:blinkon0  " disable blinking
-
-set guifont=Monaco
 
 if has("gui_running")
   set clipboard=unnamed
+
+  " Cursor customization
+  set guicursor+=a:blinkon0  " disable blinking
+  set guifont=Monaco
 
   " remove MacVim scrollbars
   set guioptions-=R
@@ -228,3 +207,6 @@ nnoremap <CR> :noh<CR>
 " copy current file path to register
 nmap cp :let @+ = expand("%")<CR>
 nmap cP :let @+ = expand("%:p")<CR>
+
+" keep cursor on current position, when using *
+nnoremap * y*
