@@ -21,7 +21,6 @@ NeoBundle 'jiangmiao/auto-pairs'         " autoclose quotes, brackets, etc
 NeoBundle 'tpope/vim-surround'           " quote selected text
 NeoBundle 'tomtom/tcomment_vim'          " comment and uncomment
 NeoBundle 'DeleteTrailingWhitespace'     " remove trailing whitespaces
-NeoBundle 'terryma/vim-multiple-cursors' " sublime-inspired multiple cursors
 NeoBundle 'tpope/vim-endwise'            " automatically end code blocks
 
 " integration with ag
@@ -43,8 +42,6 @@ NeoBundle 'slim-template/vim-slim'       " support for slim
 NeoBundle 'othree/html5.vim'             " support for html5
 
 " workspace
-NeoBundle 'vim-scripts/mru.vim'
-
 call neobundle#end()
 
 " required:
@@ -134,9 +131,6 @@ let g:ctrlp_prompt_mappings = {
 let g:DeleteTrailingWhitespace = 1
 let g:DeleteTrailingWhitespace_Action = 'delete'
 
-" multiple cursors
-let g:multi_cursor_exit_from_insert_mode = 0
-
 " NERDTree
 " let g:NERDTreeWinPos   = 'right'
 let g:NERDTreeWinSize  = 30
@@ -144,7 +138,6 @@ let g:NERDTreeMinimalUI = 1
 let g:NERDTreeChDirMode = 2
 let NERDTreeIgnore     = ['^tags$', '\.DS_Store$']
 let NERDTreeShowHidden = 0
-" autocmd vimenter * if !argc() | NERDTree | endif
 
 " NERDTree
 nmap <silent> <Leader>on :NERDTreeToggle<Cr><C-w>=
@@ -182,10 +175,9 @@ nmap <C-j> <C-w>j
 nmap <C-k> <C-w>k
 nmap <C-l> <C-w>l
 
+set clipboard=unnamed
 
 if has("gui_running")
-  set clipboard=unnamed
-
   " Cursor customization
   set guicursor+=a:blinkon0  " disable blinking
   set guifont=Monaco
@@ -210,3 +202,21 @@ nmap cP :let @+ = expand("%:p")<CR>
 
 " keep cursor on current position, when using *
 nnoremap * y*
+
+" don't use ecs to quit insert mode
+imap <c-c> <esc>
+
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" MULTIPURPOSE TAB KEY
+" Indent if we're at the beginning of a line. Else, do completion.
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! InsertTabWrapper()
+    let col = col('.') - 1
+    if !col || getline('.')[col - 1] !~ '\k'
+        return "\<tab>"
+    else
+        return "\<c-p>"
+    endif
+endfunction
+inoremap <expr> <tab> InsertTabWrapper()
+inoremap <s-tab> <c-n>
