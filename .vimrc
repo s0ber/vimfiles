@@ -113,6 +113,9 @@ set laststatus=2
 " highlight custom files
 autocmd BufRead,BufNewFile *file set filetype=ruby
 
+" GCC compiler
+au BufEnter *.c compiler gcc
+
 " Autoclose pipe in Ruby
 autocmd FileType ruby
   \ let b:AutoPairs = g:AutoPairs |
@@ -237,3 +240,5 @@ function! InsertTabWrapper()
 endfunction
 inoremap <expr> <tab> InsertTabWrapper()
 inoremap <s-tab> <c-n>
+
+set makeprg=gcc\ -Wall\ -o\ %<.out\ %
