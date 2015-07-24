@@ -35,6 +35,7 @@ NeoBundle 'd11wtq/ctrlp_bdelete.vim'     " allow to remove buffers via CtrlP pro
 
 " files tree management
 NeoBundle 'scrooloose/nerdtree'          " project tree navigation
+NeoBundle 'taiansu/nerdtree-ag'            " search via NERDTree
 
 " filetypes support
 NeoBundle 'kchmck/vim-coffee-script'     " support for coffeescript
@@ -42,6 +43,7 @@ NeoBundle 'vim-ruby/vim-ruby'            " support for ruby (always use latest v
 NeoBundle 'tpope/vim-haml'               " support for haml
 NeoBundle 'slim-template/vim-slim'       " support for slim
 NeoBundle 'othree/html5.vim'             " support for html5
+NeoBundle 'mtscout6/vim-cjsx'            " support for cjsx
 
 " workspace
 call neobundle#end()
@@ -115,6 +117,7 @@ autocmd BufRead,BufNewFile *file set filetype=ruby
 
 " GCC compiler
 au BufEnter *.c compiler gcc
+au BufWritePost *.c make
 
 " Autoclose pipe in Ruby
 autocmd FileType ruby
@@ -242,3 +245,10 @@ inoremap <expr> <tab> InsertTabWrapper()
 inoremap <s-tab> <c-n>
 
 set makeprg=gcc\ -Wall\ -o\ %<.out\ %
+
+" Shortcut to rapidly toggle `set list`
+nmap <leader>l :set list!<CR>
+
+" Use the same symbols as TextMate for tabstops and EOLs
+set listchars=tab:▸\ ,eol:¬
+
