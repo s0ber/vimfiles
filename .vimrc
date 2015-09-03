@@ -15,6 +15,7 @@ NeoBundleFetch 'Shougo/neobundle.vim'
 " My Bundles here:
 NeoBundle 'tpope/vim-sensible'           " basic settings
 NeoBundle 'bling/vim-airline'            " light version of powerline
+NeoBundle 'tpope/vim-repeat'             " repeat custom actions with .
 
 " text formatting
 NeoBundle 'jiangmiao/auto-pairs'         " autoclose quotes, brackets, etc
@@ -23,6 +24,7 @@ NeoBundle 'tomtom/tcomment_vim'          " comment and uncomment
 NeoBundle 'DeleteTrailingWhitespace'     " remove trailing whitespaces
 NeoBundle 'terryma/vim-multiple-cursors' " sublime-inspired multiple cursors
 NeoBundle 'tpope/vim-endwise'            " automatically end code blocks
+NeoBundle 'tpope/vim-unimpaired'         " mappings for paired actions
 
 " integration with ag
 NeoBundle 'rking/ag.vim'
@@ -35,7 +37,7 @@ NeoBundle 'd11wtq/ctrlp_bdelete.vim'     " allow to remove buffers via CtrlP pro
 
 " files tree management
 NeoBundle 'scrooloose/nerdtree'          " project tree navigation
-NeoBundle 'taiansu/nerdtree-ag'            " search via NERDTree
+NeoBundle 'taiansu/nerdtree-ag'          " search via NERDTree
 
 " filetypes support
 NeoBundle 'kchmck/vim-coffee-script'     " support for coffeescript
@@ -44,6 +46,12 @@ NeoBundle 'tpope/vim-haml'               " support for haml
 NeoBundle 'slim-template/vim-slim'       " support for slim
 NeoBundle 'othree/html5.vim'             " support for html5
 NeoBundle 'mtscout6/vim-cjsx'            " support for cjsx
+NeoBundle 'derekwyatt/vim-scala'         " support for scala
+NeoBundle 'othree/yajs.vim'              " support for javascript
+NeoBundle 'mxw/vim-jsx'                  " support for jsx
+
+" syntax errors highlight
+NeoBundle 'scrooloose/syntastic'
 
 " workspace
 call neobundle#end()
@@ -150,6 +158,16 @@ let g:multi_cursor_prev_key='<C-p>'
 let g:multi_cursor_skip_key='<C-x>'
 let g:multi_cursor_quit_key='<C-c>'
 
+" syntax errors highlight
+set statusline+=%#warningmsg#
+set statusline+=%{SyntasticStatuslineFlag()}
+set statusline+=%*
+
+let g:syntastic_always_populate_loc_list = 1
+let g:syntastic_auto_loc_list = 1
+let g:syntastic_check_on_open = 1
+let g:syntastic_javascript_checkers = ['eslint'] " highlight js syntax errors
+
 " NERDTree
 " let g:NERDTreeWinPos   = 'right'
 let g:NERDTreeWinSize  = 30
@@ -219,14 +237,10 @@ nnoremap <CR> :noh<CR>
 nmap cp :let @+ = expand("%")<CR>
 nmap cP :let @+ = expand("%:p")<CR>
 
-" add empty line by pressing enter without entering insert mode
-nnoremap <silent> [<space> :pu! _<cr>:']+1<cr>
-nnoremap <silent> ]<space> :pu _<cr>:'[-1<cr>
-
 " keep cursor on current position, when using *
 nnoremap * y*
 
-" don't use ecs to quit insert mode
+" don't use esc to quit insert mode
 imap <c-c> <esc>
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -251,4 +265,3 @@ nmap <leader>l :set list!<CR>
 
 " Use the same symbols as TextMate for tabstops and EOLs
 set listchars=tab:▸\ ,eol:¬
-
