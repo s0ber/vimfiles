@@ -184,6 +184,9 @@ nmap <silent> <Leader>of :NERDTreeFind<Cr><C-w>=
 " autocomplete css
 autocmd FileType css set omnifunc=csscomplete#CompleteCSS
 
+" allow JSX in normal JS files
+let g:jsx_ext_required = 0
+
 " Disable arrow keys for the great good
 inoremap  <Up>     <NOP>
 inoremap  <Down>   <NOP>
