@@ -47,8 +47,12 @@ NeoBundle 'slim-template/vim-slim'       " support for slim
 NeoBundle 'othree/html5.vim'             " support for html5
 NeoBundle 'mtscout6/vim-cjsx'            " support for cjsx
 NeoBundle 'derekwyatt/vim-scala'         " support for scala
-NeoBundle 'othree/yajs.vim'              " support for javascript
+" NeoBundle 'pangloss/vim-javascript'      " support for javascript
 NeoBundle 'mxw/vim-jsx'                  " support for jsx
+
+" textmate-like snippets
+NeoBundle 'SirVer/ultisnips'
+NeoBundle 's0ber/vim-es6'
 
 " syntax errors highlight
 NeoBundle 'scrooloose/syntastic'
@@ -157,6 +161,11 @@ let g:multi_cursor_next_key='<C-n>'
 let g:multi_cursor_prev_key='<C-p>'
 let g:multi_cursor_skip_key='<C-x>'
 let g:multi_cursor_quit_key='<C-c>'
+
+" expand snippet
+let g:UltiSnipsExpandTrigger='<c-e>'
+let g:UltiSnipsJumpForwardTrigger='<c-j>'
+let g:UltiSnipsJumpBackwardTrigger='<c-k>'
 
 " syntax errors highlight
 set statusline+=%#warningmsg#
