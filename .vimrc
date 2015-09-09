@@ -57,11 +57,14 @@ NeoBundle 's0ber/vim-es6'
 " syntax errors highlight
 NeoBundle 'scrooloose/syntastic'
 
-" async scripts dispatching
-NeoBundle 'tpope/vim-dispatch'
+" tests runners
+NeoBundle 'janko-m/vim-test'
 
-" rspec test runner
-NeoBundle 'thoughtbot/vim-rspec'
+" Interactive command execution
+NeoBundle 'Shougo/vimproc', {'build': {'mac': 'make -f make_mac.mak'}}
+
+" async scripts dispatching
+NeoBundle 'p0deje/vim-dispatch-vimshell', {'depends': ['tpope/vim-dispatch', 'Shougo/vimshell.vim']}
 
 " workspace
 call neobundle#end()
@@ -196,13 +199,36 @@ let NERDTreeShowHidden = 0
 nmap <silent> <Leader>on :NERDTreeToggle<Cr><C-w>=
 nmap <silent> <Leader>of :NERDTreeFind<Cr><C-w>=
 
+if neobundle#tap('vim-dispatch')
+  let g:dispatch_compilers = {'bundle exec': ''}
+  call neobundle#untap()
+endif
+
+if neobundle#tap('vim-test')
+  let g:test#strategy = 'dispatch'
+
+  nmap <silent> <Leader>r :TestNearest<Cr>
+  nmap <silent> <Leader>R :TestFile<Cr>
+  nmap <silent> <Leader>l :TestLast<Cr>
+
+  call neobundle#untap()
+endif
+
+if neobundle#tap('vimshell.vim')
+  let g:vimshell_escape_colors = [
+    \ '#6c6c6c', '#dc322f', '#859900', '#b58900',
+    \ '#268bd2', '#d33682', '#2aa198', '#c0c0c0',
+    \ '#383838', '#cb4b16', '#586e75', '#cb4b16',
+    \ '#839496', '#d33682', '#2aa198', '#ffffff',
+    \ ]
+
+  autocmd FileType vimshell setlocal wrap
+
+  call neobundle#untap()
+endif
+
 " autocomplete css
 autocmd FileType css set omnifunc=csscomplete#CompleteCSS
-
-" Rspec runner bindings
-map <Leader>t :call RunCurrentSpecFile()<CR>
-map <Leader>s :call RunNearestSpec()<CR>
-let g:rspec_command = "Dispatch bundle exec rspec {spec}"
 
 " allow JSX in normal JS files
 let g:jsx_ext_required = 0
