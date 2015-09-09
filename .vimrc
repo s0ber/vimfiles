@@ -281,8 +281,6 @@ if has("gui_running")
   set transparency=11
 endif
 
-nnoremap <C-c> :noh<CR>
-
 " copy current file path to register
 nmap cp :let @+ = expand("%")<CR>
 nmap cP :let @+ = expand("%:p")<CR>
@@ -292,6 +290,7 @@ nnoremap * y*
 
 " don't use esc to quit insert mode
 imap <c-c> <esc>
+nnoremap <C-c> :noh<CR>
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " MULTIPURPOSE TAB KEY
