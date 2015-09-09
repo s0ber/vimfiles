@@ -57,6 +57,12 @@ NeoBundle 's0ber/vim-es6'
 " syntax errors highlight
 NeoBundle 'scrooloose/syntastic'
 
+" async scripts dispatching
+NeoBundle 'tpope/vim-dispatch'
+
+" rspec test runner
+NeoBundle 'thoughtbot/vim-rspec'
+
 " workspace
 call neobundle#end()
 
@@ -163,9 +169,9 @@ let g:multi_cursor_skip_key='<C-x>'
 let g:multi_cursor_quit_key='<C-c>'
 
 " expand snippet
-let g:UltiSnipsExpandTrigger='<c-e>'
-let g:UltiSnipsJumpForwardTrigger='<c-j>'
-let g:UltiSnipsJumpBackwardTrigger='<c-k>'
+let g:UltiSnipsExpandTrigger='<C-e>'
+let g:UltiSnipsJumpForwardTrigger='<C-j>'
+let g:UltiSnipsJumpBackwardTrigger='<C-k>'
 
 " syntax errors highlight
 set statusline+=%#warningmsg#
@@ -192,6 +198,11 @@ nmap <silent> <Leader>of :NERDTreeFind<Cr><C-w>=
 
 " autocomplete css
 autocmd FileType css set omnifunc=csscomplete#CompleteCSS
+
+" Rspec runner bindings
+map <Leader>t :call RunCurrentSpecFile()<CR>
+map <Leader>s :call RunNearestSpec()<CR>
+let g:rspec_command = "Dispatch bundle exec rspec {spec}"
 
 " allow JSX in normal JS files
 let g:jsx_ext_required = 0
@@ -244,7 +255,7 @@ if has("gui_running")
   set transparency=11
 endif
 
-nnoremap <CR> :noh<CR>
+nnoremap <C-c> :noh<CR>
 
 " copy current file path to register
 nmap cp :let @+ = expand("%")<CR>
