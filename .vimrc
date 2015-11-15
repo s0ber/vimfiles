@@ -56,6 +56,7 @@ NeoBundle 's0ber/vim-es6'
 
 " syntax errors highlight
 NeoBundle 'scrooloose/syntastic'
+NeoBundle 'ngmy/vim-rubocop' " rubocop warnings
 
 " tests runners
 NeoBundle 'janko-m/vim-test'
@@ -65,6 +66,9 @@ NeoBundle 'Shougo/vimproc', {'build': {'mac': 'make -f make_mac.mak'}}
 
 " async scripts dispatching
 NeoBundle 'p0deje/vim-dispatch-vimshell', {'depends': ['tpope/vim-dispatch', 'Shougo/vimshell.vim']}
+
+" tmux runner
+NeoBundle 'christoomey/vim-tmux-runner'
 
 " workspace
 call neobundle#end()
@@ -186,7 +190,9 @@ let g:syntastic_auto_loc_list = 1
 let g:syntastic_check_on_open = 1
 let g:syntastic_javascript_checkers = ['eslint'] " highlight js syntax errors
 let g:syntastic_javascript_eslint_exec = 'eslint_d'
+let g:syntastic_ruby_checkers = ['rubocop'] " highlight js syntax errors
 let g:syntastic_echo_current_error=0
+let g:syntastic_ignore_files = ['.sass$']
 
 " NERDTree
 " let g:NERDTreeWinPos   = 'right'
@@ -205,8 +211,13 @@ if neobundle#tap('vim-dispatch')
   call neobundle#untap()
 endif
 
+if neobundle#tap('vim-tmux-runner')
+  let g:VtrPercentage = 35
+  let g:VtrOrientation = 'h'
+endif
+
 if neobundle#tap('vim-test')
-  let g:test#strategy = 'dispatch'
+  let g:test#strategy = 'vtr'
 
   nmap <silent> <Leader>r :TestNearest<Cr>
   nmap <silent> <Leader>R :TestFile<Cr>
