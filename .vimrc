@@ -49,10 +49,12 @@ NeoBundle 'mtscout6/vim-cjsx'            " support for cjsx
 NeoBundle 'derekwyatt/vim-scala'         " support for scala
 " NeoBundle 'pangloss/vim-javascript'      " support for javascript
 NeoBundle 'mxw/vim-jsx'                  " support for jsx
+NeoBundle 'ternjs/tern_for_vim'          " javascript refactoring and code analysis
 
 " textmate-like snippets
 NeoBundle 'SirVer/ultisnips'
 NeoBundle 's0ber/vim-es6'
+NeoBundle 's0ber/vim-ultisnips-react'
 
 " syntax errors highlight
 NeoBundle 'scrooloose/syntastic'
@@ -60,6 +62,7 @@ NeoBundle 'ngmy/vim-rubocop' " rubocop warnings
 
 " tests runners
 NeoBundle 'janko-m/vim-test'
+NeoBundle 'p0deje/vim-cucumber', {'rev': '_merge'}
 
 " Interactive command execution
 NeoBundle 'Shougo/vimproc', {'build': {'mac': 'make -f make_mac.mak'}}
