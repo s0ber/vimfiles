@@ -28,6 +28,7 @@ NeoBundle 'tpope/vim-unimpaired'         " mappings for paired actions
 
 " integration with ag
 NeoBundle 'rking/ag.vim'
+NeoBundle 'gabesoft/vim-ags'
 
 " fuzzy search
 NeoBundle 'kien/ctrlp.vim'               " fuzzy file search
@@ -136,6 +137,7 @@ let mapleader = ','
 " Ag tweaks
 let g:agprg='ag --smart-case --column'
 nmap <Leader>ag :Ag!<Space>
+nmap <Leader>as :Ags<Space>
 
 " save airline bar when reopening vim
 set laststatus=2
@@ -193,6 +195,8 @@ let g:syntastic_auto_loc_list = 1
 let g:syntastic_check_on_open = 1
 let g:syntastic_javascript_checkers = ['eslint'] " highlight js syntax errors
 let g:syntastic_javascript_eslint_exec = 'eslint_d'
+let g:syntastic_coffee_checkers = ['coffeelint']
+let g:syntastic_coffee_coffeelint_exec = 'coffeelint'
 let g:syntastic_ruby_checkers = ['rubocop'] " highlight js syntax errors
 let g:syntastic_echo_current_error=0
 let g:syntastic_ignore_files = ['.sass$']
