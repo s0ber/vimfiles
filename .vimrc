@@ -51,6 +51,7 @@ NeoBundle 'derekwyatt/vim-scala'         " support for scala
 " NeoBundle 'pangloss/vim-javascript'      " support for javascript
 NeoBundle 'mxw/vim-jsx'                  " support for jsx
 NeoBundle 'ternjs/tern_for_vim'          " javascript refactoring and code analysis
+NeoBundle 'groenewege/vim-less'          " support for less
 
 " textmate-like snippets
 NeoBundle 'SirVer/ultisnips'
@@ -85,10 +86,14 @@ filetype plugin indent on
 " prompt you to install them.
 NeoBundleCheck
 
-runtime! plugin/sensible.vim
+if !has('nvim')
+  runtime! plugin/sensible.vim
+endif
 
 let g:airline_right_sep = '◀'  " airline separators
 
+set langmenu=en_US
+let $LANG = 'en_US'
 set linespace=1          " increase space between lines
 set number               " show line numbers
 " set cursorline           " highlight current line
@@ -130,6 +135,7 @@ set hlsearch
 set incsearch
 set ignorecase
 set smartcase " doesn't ignore case only when uppercase letters are specified
+set wildignore+=*/coverage/*        " Linux/MacOSX
 
 " Let's not be retarded
 let mapleader = ','
