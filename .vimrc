@@ -150,6 +150,7 @@ set laststatus=2
 
 " highlight custom files
 autocmd BufRead,BufNewFile *file set filetype=ruby
+au BufNewFile,BufRead *.ejs set filetype=html
 
 " GCC compiler
 au BufEnter *.c compiler gcc
@@ -203,7 +204,8 @@ let g:syntastic_javascript_checkers = ['eslint'] " highlight js syntax errors
 let g:syntastic_javascript_eslint_exec = 'eslint_d'
 let g:syntastic_coffee_checkers = ['coffeelint']
 let g:syntastic_coffee_coffeelint_exec = 'coffeelint'
-let g:syntastic_ruby_checkers = ['rubocop'] " highlight js syntax errors
+let g:syntastic_html_checkers = []
+let g:syntastic_ruby_checkers = ['rubocop'] " highlight ruby syntax errors
 let g:syntastic_echo_current_error=0
 let g:syntastic_ignore_files = ['.sass$']
 
