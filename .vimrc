@@ -52,6 +52,7 @@ NeoBundle 'derekwyatt/vim-scala'         " support for scala
 NeoBundle 'mxw/vim-jsx'                  " support for jsx
 NeoBundle 'ternjs/tern_for_vim'          " javascript refactoring and code analysis
 NeoBundle 'groenewege/vim-less'          " support for less
+NeoBundle 'digitaltoad/vim-pug'          " support for pug (former Jade)
 
 " textmate-like snippets
 NeoBundle 'SirVer/ultisnips'
