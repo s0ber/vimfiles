@@ -50,7 +50,6 @@ NeoBundle 'mtscout6/vim-cjsx'            " support for cjsx
 NeoBundle 'derekwyatt/vim-scala'         " support for scala
 " NeoBundle 'pangloss/vim-javascript'      " support for javascript
 NeoBundle 'mxw/vim-jsx'                  " support for jsx
-NeoBundle 'ternjs/tern_for_vim'          " javascript refactoring and code analysis
 NeoBundle 'groenewege/vim-less'          " support for less
 NeoBundle 'digitaltoad/vim-pug'          " support for pug (former Jade)
 
@@ -60,7 +59,7 @@ NeoBundle 's0ber/vim-es6'
 NeoBundle 's0ber/vim-ultisnips-react'
 
 " syntax errors highlight
-NeoBundle 'scrooloose/syntastic'
+NeoBundle 'w0rp/ale'
 NeoBundle 'ngmy/vim-rubocop' " rubocop warnings
 
 " tests runners
@@ -195,20 +194,18 @@ let g:UltiSnipsJumpBackwardTrigger='<C-k>'
 
 " syntax errors highlight
 set statusline+=%#warningmsg#
-set statusline+=%{SyntasticStatuslineFlag()}
 set statusline+=%*
 
-let g:syntastic_always_populate_loc_list = 1
-let g:syntastic_auto_loc_list = 1
-let g:syntastic_check_on_open = 1
-let g:syntastic_javascript_checkers = ['eslint'] " highlight js syntax errors
-let g:syntastic_javascript_eslint_exec = 'eslint_d'
-let g:syntastic_coffee_checkers = ['coffeelint']
-let g:syntastic_coffee_coffeelint_exec = 'coffeelint'
-let g:syntastic_html_checkers = []
-let g:syntastic_ruby_checkers = ['rubocop'] " highlight ruby syntax errors
-let g:syntastic_echo_current_error=0
-let g:syntastic_ignore_files = ['.sass$']
+let g:ale_open_list = 1
+let g:ale_linters =  {
+  \ 'javascript': ['eslint'],
+  \ 'coffeescript': ['coffeelint'],
+  \ 'ruby': []
+  \ }
+let g:ale_javascript_eslint_use_global = 1
+let g:ale_javascript_eslint_executable = 'eslint_d'
+let g:ale_lint_on_text_changed = 'never'
+let g:ale_set_signs = 0
 
 " NERDTree
 " let g:NERDTreeWinPos   = 'right'
