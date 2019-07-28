@@ -52,6 +52,7 @@ NeoBundle 'derekwyatt/vim-scala'         " support for scala
 NeoBundle 'mxw/vim-jsx'                  " support for jsx
 NeoBundle 'groenewege/vim-less'          " support for less
 NeoBundle 'digitaltoad/vim-pug'          " support for pug (former Jade)
+NeoBundle 'leafgarland/typescript-vim'   " support for typescript (syntax and indentation)
 
 " textmate-like snippets
 NeoBundle 'SirVer/ultisnips'
@@ -67,7 +68,15 @@ NeoBundle 'janko-m/vim-test'
 NeoBundle 'p0deje/vim-cucumber', {'rev': '_merge'}
 
 " Interactive command execution
-NeoBundle 'Shougo/vimproc', {'build': {'mac': 'make -f make_mac.mak'}}
+NeoBundle 'Shougo/vimproc', {
+\ 'build' : {
+\     'windows' : 'tools\\update-dll-mingw',
+\     'cygwin' : 'make -f make_cygwin.mak',
+\     'mac' : 'make -f make_mac.mak',
+\     'linux' : 'make',
+\     'unix' : 'gmake',
+\    },
+\ }
 
 " async scripts dispatching
 NeoBundle 'p0deje/vim-dispatch-vimshell', {'depends': ['tpope/vim-dispatch', 'Shougo/vimshell.vim']}
@@ -113,6 +122,7 @@ set undodir=~/.vim/undo  " set a directory to store the undo history
 set wildmenu             " better completion for cmd mode
 set nowritebackup        " save file only once
 set synmaxcol=300
+set background=dark
 
 " Indentation
 set smartindent
@@ -200,7 +210,7 @@ let g:ale_open_list = 1
 let g:ale_linters =  {
   \ 'javascript': ['eslint'],
   \ 'coffeescript': ['coffeelint'],
-  \ 'ruby': []
+  \ 'ruby': ['rubocop']
   \ }
 let g:ale_javascript_eslint_use_global = 1
 let g:ale_javascript_eslint_executable = 'eslint_d'
