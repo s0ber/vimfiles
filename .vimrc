@@ -53,6 +53,7 @@ NeoBundle 'mxw/vim-jsx'                  " support for jsx
 NeoBundle 'groenewege/vim-less'          " support for less
 NeoBundle 'digitaltoad/vim-pug'          " support for pug (former Jade)
 NeoBundle 'leafgarland/typescript-vim'   " support for typescript (syntax and indentation)
+NeoBundle 'Quramy/tsuquyomi'             " typescript IDE
 
 " textmate-like snippets
 NeoBundle 'SirVer/ultisnips'
@@ -217,6 +218,15 @@ let g:ale_javascript_eslint_executable = 'eslint_d'
 let g:ale_lint_on_text_changed = 'never'
 let g:ale_set_signs = 0
 
+" typescript
+let g:tsuquyomi_disable_quickfix = 1
+let g:tsuquyomi_disable_default_mappings = 1
+autocmd FileType typescript nmap <silent> <Leader>d :TsuquyomiDefinition<CR>
+autocmd FileType typescript nmap <silent> <Leader>t :TsuquyomiTypeDefinition<CR>
+autocmd FileType typescript nmap <silent> <Leader>c :TsuquyomiGoBack<CR>
+autocmd FileType typescript nmap <buffer> <Leader>m : <C-u>echo tsuquyomi#hint()<CR>
+autocmd FileType typescript setlocal completeopt+=preview
+
 " NERDTree
 " let g:NERDTreeWinPos   = 'right'
 let g:NERDTreeWinSize  = 30
@@ -336,10 +346,14 @@ function! InsertTabWrapper()
     if !col || getline('.')[col - 1] !~ '\k'
         return "\<tab>"
     else
-        return "\<c-p>"
+        if &ft=='typescript' && !pumvisible()
+          return "\<c-x>\<c-o>"
+        else
+          return "\<c-p>"
+        endif
     endif
 endfunction
-inoremap <expr> <tab> InsertTabWrapper()
+autocmd FileType * inoremap <expr> <tab> InsertTabWrapper()
 inoremap <s-tab> <c-n>
 
 set makeprg=gcc\ -Wall\ -o\ %<.out\ %
