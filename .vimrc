@@ -363,3 +363,12 @@ nmap <leader>l :set list!<CR>
 
 " Use the same symbols as TextMate for tabstops and EOLs
 set listchars=tab:▸\ ,eol:¬
+
+augroup MyStuff
+  autocmd!
+  autocmd FileType qf setlocal wrap
+augroup END
+
+" set cursorline
+hi CursorLine term=NONE cterm=NONE guibg=NONE
+hi QuickFixLine ctermbg=NONE
