@@ -221,11 +221,13 @@ let g:ale_set_signs = 0
 " typescript
 let g:tsuquyomi_disable_quickfix = 1
 let g:tsuquyomi_disable_default_mappings = 1
+let g:tsuquyomi_use_vimproc = 0
 autocmd FileType typescript nmap <silent> <Leader>d :TsuquyomiDefinition<CR>
 autocmd FileType typescript nmap <silent> <Leader>t :TsuquyomiTypeDefinition<CR>
-autocmd FileType typescript nmap <silent> <Leader>c :TsuquyomiGoBack<CR>
+" autocmd FileType typescript nmap <silent> <Leader>c :TsuquyomiGoBack<CR>
 autocmd FileType typescript nmap <buffer> <Leader>m : <C-u>echo tsuquyomi#hint()<CR>
 autocmd FileType typescript setlocal completeopt+=preview
+autocmd InsertLeave,BufWritePost *.ts,*.tsx call tsuquyomi#asyncGeterr()
 
 " NERDTree
 " let g:NERDTreeWinPos   = 'right'
@@ -360,6 +362,8 @@ set makeprg=gcc\ -Wall\ -o\ %<.out\ %
 
 " Shortcut to rapidly toggle `set list`
 nmap <leader>l :set list!<CR>
+" Jump to previous location
+nmap <leader>c <C-O>
 
 " Use the same symbols as TextMate for tabstops and EOLs
 set listchars=tab:▸\ ,eol:¬
