@@ -31,10 +31,8 @@ NeoBundle 'rking/ag.vim'
 NeoBundle 'gabesoft/vim-ags'
 
 " fuzzy search
-NeoBundle 'kien/ctrlp.vim'               " fuzzy file search
-NeoBundle 'JazzCore/ctrlp-cmatcher'      " faster and better matcher for CtrlP, requires installation
+NeoBundle 'ctrlpvim/ctrlp.vim'               " fuzzy file search
 NeoBundle 'fisadev/vim-ctrlp-cmdpalette' " fuzzy command search
-NeoBundle 'd11wtq/ctrlp_bdelete.vim'     " allow to remove buffers via CtrlP prompt
 
 " files tree management
 NeoBundle 'scrooloose/nerdtree'          " project tree navigation
@@ -174,15 +172,13 @@ autocmd FileType ruby
 
 " CtrlP
 let g:ctrlp_switch_buffer = 'Et'
-let g:ctrlp_match_func  = {'match' : 'matcher#cmatch'}
 let g:ctrlp_user_command = 'ag %s --files-with-matches --nocolor -g ""'
 let g:ctrlp_working_path_mode = 'a'
-nmap <Tab> :CtrlPBuffer<Cr>
+nmap <Tab> :CtrlPMRU<Cr>
 let g:ctrlp_prompt_mappings = {
   \ 'PrtInsert("c")': ['<c-p>'],
   \ 'AcceptSelection("e")': ['<c-o>', '<cr>']
   \ }
-call ctrlp_bdelete#init()
 
 " strip trailing whitespaces
 let g:DeleteTrailingWhitespace = 1
