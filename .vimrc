@@ -64,7 +64,7 @@ NeoBundle 'w0rp/ale'
 NeoBundle 'ngmy/vim-rubocop' " rubocop warnings
 
 " tests runners
-NeoBundle 'janko-m/vim-test'
+NeoBundle 'vim-test/vim-test'
 NeoBundle 'p0deje/vim-cucumber', {'rev': '_merge'}
 
 " Interactive command execution
