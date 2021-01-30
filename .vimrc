@@ -52,6 +52,7 @@ NeoBundle 'mxw/vim-jsx'                  " support for jsx
 NeoBundle 'groenewege/vim-less'          " support for less
 NeoBundle 'digitaltoad/vim-pug'          " support for pug (former Jade)
 NeoBundle 'leafgarland/typescript-vim'   " support for typescript (syntax and indentation)
+NeoBundle 'peitalin/vim-jsx-typescript'  " support for tsx (syntax and indentation)
 NeoBundle 'Quramy/tsuquyomi'             " typescript IDE
 
 " textmate-like snippets
@@ -60,7 +61,7 @@ NeoBundle 's0ber/vim-es6'
 NeoBundle 's0ber/vim-ultisnips-react'
 
 " syntax errors highlight
-NeoBundle 'w0rp/ale'
+NeoBundle 'dense-analysis/ale'
 NeoBundle 'ngmy/vim-rubocop' " rubocop warnings
 
 " tests runners
@@ -219,7 +220,7 @@ let g:ale_set_signs = 0
 " typescript
 let g:tsuquyomi_disable_quickfix = 1
 let g:tsuquyomi_disable_default_mappings = 1
-let g:tsuquyomi_use_vimproc = 0
+let g:tsuquyomi_use_vimproc = 1
 autocmd FileType typescript nmap <silent> <Leader>d :TsuquyomiDefinition<CR>
 autocmd FileType typescript nmap <silent> <Leader>t :TsuquyomiTypeDefinition<CR>
 autocmd FileType typescript nmap <silent> <Leader>c :TsuquyomiGoBack<CR>
@@ -271,6 +272,10 @@ if neobundle#tap('vimshell.vim')
 
   call neobundle#untap()
 endif
+
+
+" enable syntax highlighting for tsx
+autocmd BufNewFile,BufRead *.tsx set filetype=typescript
 
 " autocomplete css
 autocmd FileType css set omnifunc=csscomplete#CompleteCSS
