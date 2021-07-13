@@ -53,7 +53,9 @@ NeoBundle 'groenewege/vim-less'          " support for less
 NeoBundle 'digitaltoad/vim-pug'          " support for pug (former Jade)
 NeoBundle 'leafgarland/typescript-vim'   " support for typescript (syntax and indentation)
 NeoBundle 'peitalin/vim-jsx-typescript'  " support for tsx (syntax and indentation)
-NeoBundle 'Quramy/tsuquyomi'             " typescript IDE
+" NeoBundle 'Quramy/tsuquyomi'             " typescript IDE
+
+NeoBundle 'neoclide/coc.nvim', 'release' " typescript IDE 2
 
 " textmate-like snippets
 NeoBundle 'SirVer/ultisnips'
@@ -148,6 +150,14 @@ set ignorecase
 set smartcase " doesn't ignore case only when uppercase letters are specified
 set wildignore+=*/coverage/*        " Linux/MacOSX
 
+" coc settings
+set hidden
+set nobackup
+set nowritebackup
+set cmdheight=2
+set updatetime=300
+set shortmess+=c
+
 " Let's not be retarded
 let mapleader = ','
 
@@ -207,6 +217,7 @@ set statusline+=%#warningmsg#
 set statusline+=%*
 
 let g:ale_open_list = 1
+let g:ale_keep_list_window_open = 0
 let g:ale_linters =  {
   \ 'javascript': ['eslint'],
   \ 'coffeescript': ['coffeelint'],
@@ -214,19 +225,42 @@ let g:ale_linters =  {
   \ }
 let g:ale_javascript_eslint_use_global = 1
 let g:ale_javascript_eslint_executable = 'eslint_d'
+let g:ale_typescript_eslint_use_global = 1
+let g:ale_typescript_eslint_executable = 'eslint_d'
 let g:ale_lint_on_text_changed = 'never'
 let g:ale_set_signs = 0
+let g:ale_disable_lsp = 1
+" close locations list when leaving the buffer
+augroup CloseLoclistWindowGroup
+  autocmd!
+  autocmd QuitPre * if empty(&buftype) | lclose | endif
+augroup END
 
 " typescript
-let g:tsuquyomi_disable_quickfix = 1
-let g:tsuquyomi_disable_default_mappings = 1
-let g:tsuquyomi_use_vimproc = 1
-autocmd FileType typescript nmap <silent> <Leader>d :TsuquyomiDefinition<CR>
-autocmd FileType typescript nmap <silent> <Leader>t :TsuquyomiTypeDefinition<CR>
-autocmd FileType typescript nmap <silent> <Leader>c :TsuquyomiGoBack<CR>
-autocmd FileType typescript nmap <buffer> <Leader>m : <C-u>echo tsuquyomi#hint()<CR>
-autocmd FileType typescript setlocal completeopt+=preview
-autocmd InsertLeave,BufWritePost *.ts,*.tsx call tsuquyomi#asyncGeterr()
+" let g:tsuquyomi_disable_quickfix = 1
+" let g:tsuquyomi_disable_default_mappings = 1
+" let g:tsuquyomi_use_vimproc = 1
+" autocmd FileType typescript nmap <silent> <Leader>d :TsuquyomiDefinition<CR>
+" autocmd FileType typescript nmap <silent> <Leader>t :TsuquyomiTypeDefinition<CR>
+" autocmd FileType typescript nmap <silent> <Leader>c :TsuquyomiGoBack<CR>
+" autocmd FileType typescript nmap <buffer> <Leader>m : <C-u>echo tsuquyomi#hint()<CR>
+autocmd FileType typescript,typescript.tsx setlocal completeopt+=preview
+" autocmd InsertLeave,BufWritePost *.ts,*.tsx call tsuquyomi#asyncGeterr()
+
+" typescript 2
+autocmd FileType typescript,typescript.tsx nmap <silent> <Leader>d <Plug>(coc-definition)
+autocmd FileType typescript,typescript.tsx nmap <silent> <Leader>t <Plug>(coc-type-definition)
+autocmd FileType typescript,typescript.tsx nmap <buffer> <Leader>m :call <SID>show_documentation()<CR>
+
+function! s:show_documentation()
+  if (index(['vim','help'], &filetype) >= 0)
+    execute 'h '.expand('<cword>')
+  elseif (coc#rpc#ready())
+    call CocActionAsync('doHover')
+  else
+    execute '!' . &keywordprg . " " . expand('<cword>')
+  endif
+endfunction
 
 " NERDTree
 " let g:NERDTreeWinPos   = 'right'
@@ -275,7 +309,7 @@ endif
 
 
 " enable syntax highlighting for tsx
-autocmd BufNewFile,BufRead *.tsx set filetype=typescript
+autocmd BufNewFile,BufRead *.tsx set filetype=typescript.tsx
 
 " autocomplete css
 autocmd FileType css set omnifunc=csscomplete#CompleteCSS
@@ -348,25 +382,23 @@ nnoremap <C-c> :noh<CR>
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! InsertTabWrapper()
     let col = col('.') - 1
-    if !col || getline('.')[col - 1] !~ '\k'
-        return "\<tab>"
+    if pumvisible()
+      return "\<c-n>"
+    elseif !col || getline('.')[col - 1] !~ '\k'
+      return "\<tab>"
     else
-        if &ft=='typescript' && !pumvisible()
-          return "\<c-x>\<c-o>"
-        else
-          return "\<c-p>"
-        endif
+      return coc#refresh()
     endif
 endfunction
 autocmd FileType * inoremap <expr> <tab> InsertTabWrapper()
-inoremap <s-tab> <c-n>
+inoremap <s-tab> <c-p>
 
 set makeprg=gcc\ -Wall\ -o\ %<.out\ %
 
 " Shortcut to rapidly toggle `set list`
 nmap <leader>l :set list!<CR>
 " Jump to previous location
-" nmap <leader>c <C-O>
+nmap <leader>c <C-O>
 
 " Use the same symbols as TextMate for tabstops and EOLs
 set listchars=tab:▸\ ,eol:¬

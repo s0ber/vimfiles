@@ -1,0 +1,6 @@
+{
+  "diagnostic.displayByAle": true,
+  "tsserver.npm": "~/.nvm/versions/node/v15.14.0/bin/node",
+  "coc.preferences.hoverTarget": "echo",
+  "suggest.floatEnable": false
+}

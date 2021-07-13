@@ -37,6 +37,12 @@ cd ~/.vim/bundle/ctrlp-cmatcher/
 ./install.sh
 ```
 
+Link COC settings:
+
+```
+ln -sf ~/.vim/coc-settings.json ~/.config/nvim/coc-settings.json
+```
+
 To make everything work, install all packages (this will be suggested when you first time opening vim).
 
 #### Updating with latest version
