@@ -14,7 +14,7 @@ NeoBundleFetch 'Shougo/neobundle.vim'
 
 " My Bundles here:
 NeoBundle 'tpope/vim-sensible'           " basic settings
-NeoBundle 'bling/vim-airline'            " light version of powerline
+NeoBundle 'vim-airline/vim-airline', 'master'            " light version of powerline
 NeoBundle 'tpope/vim-repeat'             " repeat custom actions with .
 
 " text formatting
@@ -33,7 +33,7 @@ NeoBundle 'gabesoft/vim-ags'
 " fuzzy search
 NeoBundle 'ctrlpvim/ctrlp.vim'               " fuzzy file search
 NeoBundle 'JazzCore/ctrlp-cmatcher'      " faster and better matcher for CtrlP, requires installation
-NeoBundle 'fisadev/vim-ctrlp-cmdpalette' " fuzzy command search
+" NeoBundle 'fisadev/vim-ctrlp-cmdpalette' " fuzzy command search
 
 " files tree management
 NeoBundle 'scrooloose/nerdtree'          " project tree navigation
@@ -55,37 +55,45 @@ NeoBundle 'leafgarland/typescript-vim'   " support for typescript (syntax and in
 NeoBundle 'peitalin/vim-jsx-typescript'  " support for tsx (syntax and indentation)
 " NeoBundle 'Quramy/tsuquyomi'             " typescript IDE
 
-NeoBundle 'neoclide/coc.nvim', 'release' " typescript IDE 2
+" typescript IDE 2
+NeoBundle 'neoclide/coc.nvim', 'master', {
+\ 'build' : {
+\     'windows' : 'yarn install --frozen-lockfile',
+\     'cygwin' : 'yarn install --frozen-lockfile',
+\     'mac' : 'yarn install --frozen-lockfile',
+\     'linux' : 'yarn install --frozen-lockfile',
+\     'unix' : 'yarn install --frozen-lockfile'
+\    }
+\ }
 
 " textmate-like snippets
-NeoBundle 'SirVer/ultisnips'
+" NeoBundle 'SirVer/ultisnips'
 NeoBundle 's0ber/vim-es6'
-NeoBundle 's0ber/vim-ultisnips-react'
+" NeoBundle 's0ber/vim-ultisnips-react'
 
 " syntax errors highlight
-NeoBundle 'dense-analysis/ale'
-NeoBundle 'ngmy/vim-rubocop' " rubocop warnings
+" NeoBundle 'ngmy/vim-rubocop' " rubocop warnings
 
 " tests runners
-NeoBundle 'vim-test/vim-test'
+" NeoBundle 'vim-test/vim-test'
 NeoBundle 'p0deje/vim-cucumber', {'rev': '_merge'}
 
 " Interactive command execution
-NeoBundle 'Shougo/vimproc', {
-\ 'build' : {
-\     'windows' : 'tools\\update-dll-mingw',
-\     'cygwin' : 'make -f make_cygwin.mak',
-\     'mac' : 'make -f make_mac.mak',
-\     'linux' : 'make',
-\     'unix' : 'gmake',
-\    },
-\ }
+" NeoBundle 'Shougo/vimproc', {
+" \ 'build' : {
+" \     'windows' : 'tools\\update-dll-mingw',
+" \     'cygwin' : 'make -f make_cygwin.mak',
+" \     'mac' : 'make -f make_mac.mak',
+" \     'linux' : 'make',
+" \     'unix' : 'gmake',
+" \    },
+" \ }
 
 " async scripts dispatching
-NeoBundle 'p0deje/vim-dispatch-vimshell', {'depends': ['tpope/vim-dispatch', 'Shougo/vimshell.vim']}
+" NeoBundle 'p0deje/vim-dispatch-vimshell', {'depends': ['tpope/vim-dispatch', 'Shougo/vimshell.vim']}
 
 " tmux runner
-NeoBundle 'christoomey/vim-tmux-runner'
+" NeoBundle 'christoomey/vim-tmux-runner'
 
 " workspace
 call neobundle#end()
@@ -101,8 +109,6 @@ NeoBundleCheck
 if !has('nvim')
   runtime! plugin/sensible.vim
 endif
-
-let g:airline_right_sep = '◀'  " airline separators
 
 set langmenu=en_US
 let $LANG = 'en_US'
@@ -157,6 +163,11 @@ set nowritebackup
 " set cmdheight=2
 set updatetime=300
 set shortmess+=c
+if has("nvim-0.5.0") || has("patch-8.1.1564")
+  " Recently vim can merge signcolumn and number column into one
+  set signcolumn=number
+endif
+let g:coc_force_debug = 1
 
 " Let's not be retarded
 let mapleader = ','
@@ -165,9 +176,6 @@ let mapleader = ','
 let g:agprg='ag --smart-case --column'
 nmap <Leader>ag :Ag!<Space>
 nmap <Leader>as :Ags<Space>
-
-" save airline bar when reopening vim
-set laststatus=2
 
 " highlight custom files
 autocmd BufRead,BufNewFile *file set filetype=ruby
@@ -211,41 +219,6 @@ let g:multi_cursor_quit_key='<C-c>'
 let g:UltiSnipsExpandTrigger='<C-e>'
 let g:UltiSnipsJumpForwardTrigger='<C-j>'
 let g:UltiSnipsJumpBackwardTrigger='<C-k>'
-
-" syntax errors highlight
-set statusline+=%#warningmsg#
-set statusline+=%*
-
-let g:ale_open_list = 1
-let g:ale_keep_list_window_open = 0
-let g:ale_linters =  {
-  \ 'javascript': ['eslint'],
-  \ 'coffeescript': ['coffeelint'],
-  \ 'ruby': ['rubocop']
-  \ }
-let g:ale_javascript_eslint_use_global = 1
-let g:ale_javascript_eslint_executable = 'eslint_d'
-let g:ale_typescript_eslint_use_global = 1
-let g:ale_typescript_eslint_executable = 'eslint_d'
-let g:ale_lint_on_text_changed = 'never'
-let g:ale_set_signs = 0
-let g:ale_disable_lsp = 1
-" close locations list when leaving the buffer
-augroup CloseLoclistWindowGroup
-  autocmd!
-  autocmd QuitPre * if empty(&buftype) | lclose | endif
-augroup END
-
-" typescript
-" let g:tsuquyomi_disable_quickfix = 1
-" let g:tsuquyomi_disable_default_mappings = 1
-" let g:tsuquyomi_use_vimproc = 1
-" autocmd FileType typescript nmap <silent> <Leader>d :TsuquyomiDefinition<CR>
-" autocmd FileType typescript nmap <silent> <Leader>t :TsuquyomiTypeDefinition<CR>
-" autocmd FileType typescript nmap <silent> <Leader>c :TsuquyomiGoBack<CR>
-" autocmd FileType typescript nmap <buffer> <Leader>m : <C-u>echo tsuquyomi#hint()<CR>
-autocmd FileType typescript,typescript.tsx setlocal completeopt+=preview
-" autocmd InsertLeave,BufWritePost *.ts,*.tsx call tsuquyomi#asyncGeterr()
 
 " typescript 2
 autocmd FileType typescript,typescript.tsx nmap <silent> <Leader>d <Plug>(coc-definition)
@@ -346,6 +319,10 @@ nmap <C-j> <C-w>j
 nmap <C-k> <C-w>k
 nmap <C-l> <C-w>l
 
+" Window navigation
+nmap <C-]> <Plug>(coc-diagnostic-next)
+nmap <C-[> <Plug>(coc-diagnostic-prev)
+
 set clipboard=unnamed
 
 if has("gui_running")
@@ -403,11 +380,13 @@ nmap <leader>c <C-O>
 " Use the same symbols as TextMate for tabstops and EOLs
 set listchars=tab:▸\ ,eol:¬
 
-augroup MyStuff
-  autocmd!
-  autocmd FileType qf setlocal wrap
-augroup END
-
 " set cursorline
 hi CursorLine term=NONE cterm=NONE guibg=NONE
 hi QuickFixLine ctermbg=NONE
+
+hi CocFloating ctermbg=237
+
+" fix typescript syntax in nvim@0.5.0
+hi link typescriptReserved Keyword
+hi link typescriptParens Operator
+hi link typescriptNull Type
