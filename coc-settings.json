@@ -2,7 +2,6 @@
   "tsserver.npm": "~/.nvm/versions/node/v15.14.0/bin/node",
   "hover.target": "float",
   "suggest.floatEnable": false,
-  "diagnostic.enableMessage": "never",
   "diagnostic.virtualText": true,
   "diagnostic.virtualTextCurrentLineOnly": false
 }
