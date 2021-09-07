@@ -223,6 +223,7 @@ let g:UltiSnipsJumpBackwardTrigger='<C-k>'
 " typescript 2
 autocmd FileType typescript,typescript.tsx nmap <silent> <Leader>d <Plug>(coc-definition)
 autocmd FileType typescript,typescript.tsx nmap <silent> <Leader>t <Plug>(coc-type-definition)
+autocmd FileType typescript,typescript.tsx nmap <silent> <Leader>r <Plug>(coc-references-used)
 autocmd FileType typescript,typescript.tsx nmap <buffer> <Leader>m :call <SID>show_documentation()<CR>
 
 function! s:show_documentation()
@@ -390,3 +391,7 @@ hi CocFloating ctermbg=237
 hi link typescriptReserved Keyword
 hi link typescriptParens Operator
 hi link typescriptNull Type
+
+" float popup scroll
+nnoremap <nowait><expr> <C-f> coc#float#has_scroll() ? coc#float#scroll(1) : "\<C-f>"
+nnoremap <nowait><expr> <C-b> coc#float#has_scroll() ? coc#float#scroll(0) : "\<C-b>"
