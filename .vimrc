@@ -32,7 +32,8 @@ NeoBundle 'gabesoft/vim-ags'
 
 " fuzzy search
 NeoBundle 'ctrlpvim/ctrlp.vim'               " fuzzy file search
-NeoBundle 'JazzCore/ctrlp-cmatcher'      " faster and better matcher for CtrlP, requires installation
+" NeoBundle 'JazzCore/ctrlp-cmatcher'      " faster and better matcher for CtrlP, requires installation
+NeoBundle 'FelikZ/ctrlp-py-matcher'
 " NeoBundle 'fisadev/vim-ctrlp-cmdpalette' " fuzzy command search
 
 " files tree management
@@ -191,9 +192,11 @@ autocmd FileType ruby
   \ let b:AutoPairs['|'] = '|'
 
 " CtrlP
+" PyMatcher for CtrlP
+let g:ctrlp_match_func = { 'match': 'pymatcher#PyMatch' }
+
 let g:ctrlp_switch_buffer = 'Et'
 let g:ctrlp_user_command = 'ag %s --files-with-matches --nocolor -g ""'
-let g:ctrlp_match_func  = {'match' : 'matcher#cmatch'}
 nmap <Tab> :CtrlPMRU<Cr>
 let ctrlp_mruf_relative = 1
 let g:ctrlp_prompt_mappings = {

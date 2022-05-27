@@ -1,5 +1,5 @@
 {
-  "tsserver.npm": "~/.nvm/versions/node/v15.14.0/bin/node",
+  "tsserver.npm": "~/.nvm/versions/node/v14.19.3/bin/node",
   "hover.target": "float",
   "suggest.floatEnable": false,
   "diagnostic.virtualText": true,
