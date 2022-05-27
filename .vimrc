@@ -173,7 +173,7 @@ let g:coc_force_debug = 1
 let mapleader = ','
 
 " Ag tweaks
-let g:agprg='ag --smart-case --column'
+let g:agprg='ag --hidden --smart-case --column --ignore={".git","node_modules","*gql.types.tsx"}'
 nmap <Leader>ag :Ag!<Space>
 nmap <Leader>as :Ags<Space>
 
