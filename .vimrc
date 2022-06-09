@@ -56,6 +56,10 @@ NeoBundle 'leafgarland/typescript-vim'   " support for typescript (syntax and in
 NeoBundle 'peitalin/vim-jsx-typescript'  " support for tsx (syntax and indentation)
 " NeoBundle 'Quramy/tsuquyomi'             " typescript IDE
 
+" colorscheme
+NeoBundle 'vv9k/vim-github-dark'
+NeoBundle 'dracula/vim.git'
+
 " typescript IDE 2
 NeoBundle 'neoclide/coc.nvim', 'master', {
 \ 'build' : {
@@ -148,7 +152,7 @@ set splitbelow
 set splitright
 
 " colorscheme settings
-colorscheme Monokai
+colorscheme monokai
 
 " search tweaks
 set hlsearch
@@ -248,7 +252,7 @@ let NERDTreeIgnore     = ['^tags$', '\.DS_Store$']
 let NERDTreeShowHidden = 0
 
 " NERDTree
-nmap <silent> <Leader>on :NERDTreeToggle<Cr><C-w>=
+nmap <silent> <Leader>on :NERDTreeFind<Cr><C-w>=
 nmap <silent> <Leader>of :NERDTreeFind<Cr><C-w>=
 
 if neobundle#tap('vim-dispatch')
@@ -290,6 +294,9 @@ autocmd BufNewFile,BufRead *.tsx set filetype=typescript.tsx
 
 " autocomplete css
 autocmd FileType css set omnifunc=csscomplete#CompleteCSS
+
+" open nerdtree immediately
+autocmd VimEnter * NERDTreeToggle
 
 " allow JSX in normal JS files
 let g:jsx_ext_required = 0
@@ -389,6 +396,8 @@ hi CursorLine term=NONE cterm=NONE guibg=NONE
 hi QuickFixLine ctermbg=NONE
 
 hi CocFloating ctermbg=237
+highlight Normal ctermbg=0
+highlight NonText ctermbg=0
 
 " fix typescript syntax in nvim@0.5.0
 hi link typescriptReserved Keyword

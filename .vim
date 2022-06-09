@@ -1,1 +1,0 @@
-/Users/s0ber/.config/nvim/.vim

@@ -3,5 +3,6 @@
   "hover.target": "float",
   "suggest.floatEnable": false,
   "diagnostic.virtualText": true,
-  "diagnostic.virtualTextCurrentLineOnly": false
+  "diagnostic.virtualTextCurrentLineOnly": false,
+  "eslint.packageManager": "yarn"
 }
