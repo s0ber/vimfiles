@@ -99,6 +99,10 @@ NeoBundle 'p0deje/vim-cucumber', {'rev': '_merge'}
 
 " tmux runner
 " NeoBundle 'christoomey/vim-tmux-runner'
+"
+
+" icons
+NeoBundle 'ryanoasis/vim-devicons'
 
 " workspace
 call neobundle#end()
@@ -181,6 +185,10 @@ let mapleader = ','
 let g:agprg='ag --hidden --smart-case --column --ignore={".git","node_modules","*gql.types.tsx"}'
 nmap <Leader>ag :Ag!<Space>
 nmap <Leader>as :Ags<Space>
+let g:ag_apply_qmappings=0 " don't apply default mappings
+" never end up in NERDTree when selecting file from quickfix list
+nnoremap <expr> <CR> &buftype == 'quickfix' ? "<C-W>k<C-W>l<C-W>j\<CR>" : '<CR>'
+nmap <expr> o &buftype == 'quickfix' ? '<CR>' : 'o'
 
 " highlight custom files
 autocmd BufRead,BufNewFile *file set filetype=ruby
@@ -363,6 +371,9 @@ nnoremap * y*
 " don't use esc to quit insert mode
 imap <c-c> <esc>
 nnoremap <C-c> :noh<CR>
+
+" ariline icons
+let g:airline_powerline_fonts = 1
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " MULTIPURPOSE TAB KEY
