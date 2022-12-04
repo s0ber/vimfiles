@@ -104,6 +104,9 @@ NeoBundle 'p0deje/vim-cucumber', {'rev': '_merge'}
 " icons
 NeoBundle 'ryanoasis/vim-devicons'
 
+" make quicklist modifiable
+" NeoBundle 'stefandtw/quickfix-reflector.vim'
+
 " workspace
 call neobundle#end()
 
@@ -161,6 +164,12 @@ colorscheme monokai
 " search tweaks
 set hlsearch
 set incsearch
+
+" Preview effects of command incrementally (e.g. :substitute). Neovim only.
+if has('nvim')
+	set inccommand=nosplit
+endif
+
 set ignorecase
 set smartcase " doesn't ignore case only when uppercase letters are specified
 set wildignore+=*/coverage/*        " Linux/MacOSX
