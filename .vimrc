@@ -196,7 +196,7 @@ nmap <Leader>ag :Ag!<Space>
 nmap <Leader>as :Ags<Space>
 let g:ag_apply_qmappings=0 " don't apply default mappings
 " never end up in NERDTree when selecting file from quickfix list
-nnoremap <expr> <CR> &buftype == 'quickfix' ? "<C-W>k<C-W>l<C-W>j\<CR>" : '<CR>'
+nnoremap <expr> <CR> &buftype == 'quickfix' ? "<C-W>k<C-W>l<C-W>j<C-W>j<C-W>j\<CR>" : '<CR>'
 nmap <expr> o &buftype == 'quickfix' ? '<CR>' : 'o'
 
 " highlight custom files
