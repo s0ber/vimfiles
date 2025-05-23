@@ -13,7 +13,6 @@ call neobundle#begin(expand('~/.vim/bundle'))
 NeoBundleFetch 'Shougo/neobundle.vim'
 
 " My Bundles here:
-NeoBundle 'tpope/vim-sensible'           " basic settings
 NeoBundle 'vim-airline/vim-airline', 'master'            " light version of powerline
 NeoBundle 'tpope/vim-repeat'             " repeat custom actions with .
 
@@ -46,11 +45,9 @@ NeoBundle 'vim-ruby/vim-ruby'            " support for ruby (always use latest v
 NeoBundle 'tpope/vim-haml'               " support for haml
 NeoBundle 'slim-template/vim-slim'       " support for slim
 NeoBundle 'othree/html5.vim'             " support for html5
-NeoBundle 'mtscout6/vim-cjsx'            " support for cjsx
 NeoBundle 'derekwyatt/vim-scala'         " support for scala
 " NeoBundle 'pangloss/vim-javascript'      " support for javascript
 NeoBundle 'mxw/vim-jsx'                  " support for jsx
-" NeoBundle 'MaxMEllon/vim-jsx-pretty'       " support for jsx
 NeoBundle 'groenewege/vim-less'          " support for less
 NeoBundle 'digitaltoad/vim-pug'          " support for pug (former Jade)
 " NeoBundle 'leafgarland/typescript-vim'   " support for typescript (syntax and indentation)
@@ -74,41 +71,14 @@ NeoBundle 'EdenEast/nightfox.nvim'
 " typescript IDE 2
 NeoBundle 'neoclide/coc.nvim', { 'branch': 'release', 'build': 'npm ci' }
 
-" textmate-like snippets
-" NeoBundle 'SirVer/ultisnips'
-" NeoBundle 's0ber/vim-es6'
-" NeoBundle 's0ber/vim-ultisnips-react'
-
 " syntax errors highlight
 " NeoBundle 'ngmy/vim-rubocop' " rubocop warnings
 
 " tests runners
 NeoBundle 'vim-test/vim-test'
-NeoBundle 'p0deje/vim-cucumber', {'rev': '_merge'}
-
-" Interactive command execution
-" NeoBundle 'Shougo/vimproc', {
-" \ 'build' : {
-" \     'windows' : 'tools\\update-dll-mingw',
-" \     'cygwin' : 'make -f make_cygwin.mak',
-" \     'mac' : 'make -f make_mac.mak',
-" \     'linux' : 'make',
-" \     'unix' : 'gmake',
-" \    },
-" \ }
-
-" async scripts dispatching
-" NeoBundle 'p0deje/vim-dispatch-vimshell', {'depends': ['tpope/vim-dispatch', 'Shougo/vimshell.vim']}
-
-" tmux runner
-" NeoBundle 'christoomey/vim-tmux-runner'
-"
 
 " icons
 " NeoBundle 'ryanoasis/vim-devicons'
-
-" make quicklist modifiable
-" NeoBundle 'stefandtw/quickfix-reflector.vim'
 
 " workspace
 call neobundle#end()
@@ -121,29 +91,18 @@ filetype plugin indent on
 " prompt you to install them.
 NeoBundleCheck
 
-if !has('nvim')
-  runtime! plugin/sensible.vim
-endif
-
 set langmenu=en_US
 let $LANG = 'en_US'
 set linespace=1          " increase space between lines
 set number               " show line numbers
 " set cursorline           " highlight current line
-set lazyredraw           " faster scrolling
 set noswapfile           " no *.swp artifacts
 set scrolloff=5          " Keep at least 5 lines visible when scrolling
 set nowrap               " Disabled wrapping
-set ruler                " show the cursor position all the time
-set laststatus=2         " Always display the status line
-set showcmd              " display incomplete commands
 set autowrite            " Automatically :write before running commands
-set exrc                 " enable per-directory .vimrc files
-set secure               " disable unsafe commands in local .vimrc files
 set history=50           " history size
 set undofile             " tell it to use an undo file
 set undodir=~/.vim/undo  " set a directory to store the undo history
-set wildmenu             " better completion for cmd mode
 set nowritebackup        " save file only once
 set synmaxcol=300
 set background=dark
@@ -153,13 +112,6 @@ set smartindent
 set tabstop=2
 set shiftwidth=2
 set expandtab
-set backspace=2
-
-set modifiable
-
-" Open new split panes to right and bottom, which feels more natural
-set splitbelow
-set splitright
 
 " colorscheme settings
 colorscheme nordfox
@@ -167,7 +119,6 @@ colorscheme nordfox
 
 " search tweaks
 set hlsearch
-set incsearch
 
 " Preview effects of command incrementally (e.g. :substitute). Neovim only.
 if has('nvim')
@@ -179,8 +130,6 @@ set smartcase " doesn't ignore case only when uppercase letters are specified
 set wildignore+=*/coverage/*        " Linux/MacOSX
 
 " coc settings
-set hidden
-set nobackup
 set nowritebackup
 " set cmdheight=2
 set updatetime=300
@@ -205,7 +154,7 @@ nmap <expr> o &buftype == 'quickfix' ? '<CR>' : 'o'
 
 " highlight custom files
 autocmd BufRead,BufNewFile *file set filetype=ruby
-au BufNewFile,BufRead *.ejs set filetype=html
+autocmd BufNewFile,BufRead *.ejs set filetype=html
 autocmd! BufNewFile,BufRead *.glsl set ft=glslx
 
 " GCC compiler
@@ -245,11 +194,6 @@ let g:multi_cursor_prev_key='<C-p>'
 let g:multi_cursor_skip_key='<C-x>'
 let g:multi_cursor_quit_key='<C-c>'
 
-" expand snippet
-let g:UltiSnipsExpandTrigger='<C-e>'
-let g:UltiSnipsJumpForwardTrigger='<C-j>'
-let g:UltiSnipsJumpBackwardTrigger='<C-k>'
-
 " typescript 2
 autocmd FileType typescript,typescript.tsx,javascript.jsx nmap <silent> <Leader>d <Plug>(coc-definition)
 autocmd FileType typescript,typescript.tsx,javascript.jsx nmap <silent> <Leader>t <Plug>(coc-type-definition)
@@ -276,16 +220,6 @@ let NERDTreeShowHidden = 0
 nmap <silent> <Leader>on :NERDTreeFind<Cr><C-w>=
 nmap <silent> <Leader>of :NERDTreeFind<Cr><C-w>=
 
-if neobundle#tap('vim-dispatch')
-  let g:dispatch_compilers = {'bundle exec': ''}
-  call neobundle#untap()
-endif
-
-if neobundle#tap('vim-tmux-runner')
-  let g:VtrPercentage = 35
-  let g:VtrOrientation = 'h'
-endif
-
 if neobundle#tap('vim-test')
   let g:test#strategy = 'neovim_sticky'
   let test#neovim_sticky#reopen_window = 1
@@ -297,20 +231,6 @@ if neobundle#tap('vim-test')
 
   call neobundle#untap()
 endif
-
-if neobundle#tap('vimshell.vim')
-  let g:vimshell_escape_colors = [
-    \ '#6c6c6c', '#dc322f', '#859900', '#b58900',
-    \ '#268bd2', '#d33682', '#2aa198', '#c0c0c0',
-    \ '#383838', '#cb4b16', '#586e75', '#cb4b16',
-    \ '#839496', '#d33682', '#2aa198', '#ffffff',
-    \ ]
-
-  autocmd FileType vimshell setlocal wrap
-
-  call neobundle#untap()
-endif
-
 
 " enable syntax highlighting for tsx
 autocmd BufNewFile,BufRead *.tsx set filetype=typescript.tsx
@@ -341,7 +261,6 @@ if &term =~ '256color'
   set t_ut=
 endif
 
-
 " Stop using arrows in command mode
 cmap <C-h> <Left>
 cmap <C-l> <Right>
@@ -360,23 +279,6 @@ nmap <C-[> <Plug>(coc-diagnostic-prev)
 
 set clipboard=unnamed
 
-if has("gui_running")
-  " Cursor customization
-  set guicursor+=a:blinkon0  " disable blinking
-  set guifont=Monaco
-
-  " remove MacVim scrollbars
-  set guioptions-=R
-  set guioptions-=r
-  set guioptions-=L
-
-  " always show tab bar
-  set showtabline=2
-
-  " Make MacVim nicer
-  set transparency=11
-endif
-
 " copy current file path to register
 nmap cp :let @+ = expand("%")<CR>
 nmap cP :let @+ = expand("%:p")<CR>
@@ -386,7 +288,7 @@ nnoremap * y*
 
 " don't use esc to quit insert mode
 imap <c-c> <esc>
-nnoremap <C-c> :noh<CR>
+nnoremap <C-c> :nohlsearch<CR>
 
 " ariline icons
 let g:airline_powerline_fonts = 1
@@ -424,8 +326,8 @@ set listchars=tab:▸\ ,eol:¬
 augroup CustomHighlights
   autocmd!
   autocmd VimEnter * hi CocFloating ctermbg=237 guibg=#3a3a3a
-  autocmd VimEnter * hi Normal ctermbg=NONE guibg=NONE
-  autocmd VimEnter * hi NormalNC ctermbg=NONE guibg=NONE
+  autocmd VimEnter * hi Normal ctermbg=NONE guibg=NONE guifg=#e6eaea
+  autocmd VimEnter * hi NormalNC ctermbg=NONE guibg=NONE guifg=#e6eaea
   autocmd VimEnter * hi NonText ctermbg=NONE guibg=NONE
   autocmd VimEnter * hi WinSeparator ctermbg=241 ctermfg=241
   autocmd VimEnter * hi CtrlPLinePre ctermfg=0 guifg=#000000
