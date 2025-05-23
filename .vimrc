@@ -325,17 +325,19 @@ set listchars=tab:▸\ ,eol:¬
 
 augroup CustomHighlights
   autocmd!
-  autocmd VimEnter * hi CocFloating ctermbg=237 guibg=#3a3a3a
+  " use light shade for default text
   autocmd VimEnter * hi Normal ctermbg=NONE guibg=NONE guifg=#e6eaea
   autocmd VimEnter * hi NormalNC ctermbg=NONE guibg=NONE guifg=#e6eaea
-  autocmd VimEnter * hi NonText ctermbg=NONE guibg=NONE
-  autocmd VimEnter * hi WinSeparator ctermbg=241 ctermfg=241
+
+  " autocmd VimEnter * hi NonText ctermbg=NONE guibg=NONE
+  " autocmd VimEnter * hi WinSeparator ctermbg=241 ctermfg=241
+
+  " hide > sign in ctrlp menu
   autocmd VimEnter * hi CtrlPLinePre ctermfg=0 guifg=#000000
   autocmd VimEnter * hi clear QuickFixLine
-  autocmd VimEnter * hi! link CocErrorSign ErrorMsg
+  " remove bg from diagnostic virtual messages
   autocmd VimEnter * hi! DiagnosticVirtualTextError guibg=NONE
   autocmd VimEnter * hi! DiagnosticVirtualTextInfo guibg=NONE
-  " autocmd VimEnter * hi! link CocErrorSign Exception
 
   " set cursorline
   " autocmd VimEnter * hi CursorLine term=NONE cterm=NONE guibg=NONE
