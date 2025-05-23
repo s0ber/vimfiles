@@ -4,5 +4,6 @@
   "suggest.floatEnable": false,
   "diagnostic.virtualText": true,
   "diagnostic.virtualTextCurrentLineOnly": false,
-  "eslint.packageManager": "yarn"
+  "eslint.packageManager": "npm",
+  "tsserver.implicitProjectConfig.checkJs": true
 }

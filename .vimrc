@@ -50,15 +50,26 @@ NeoBundle 'mtscout6/vim-cjsx'            " support for cjsx
 NeoBundle 'derekwyatt/vim-scala'         " support for scala
 " NeoBundle 'pangloss/vim-javascript'      " support for javascript
 NeoBundle 'mxw/vim-jsx'                  " support for jsx
+" NeoBundle 'MaxMEllon/vim-jsx-pretty'       " support for jsx
 NeoBundle 'groenewege/vim-less'          " support for less
 NeoBundle 'digitaltoad/vim-pug'          " support for pug (former Jade)
-NeoBundle 'leafgarland/typescript-vim'   " support for typescript (syntax and indentation)
-NeoBundle 'peitalin/vim-jsx-typescript'  " support for tsx (syntax and indentation)
+" NeoBundle 'leafgarland/typescript-vim'   " support for typescript (syntax and indentation)
+" NeoBundle 'peitalin/vim-jsx-typescript'  " support for tsx (syntax and indentation)
 " NeoBundle 'Quramy/tsuquyomi'             " typescript IDE
+" NeoBundle 'tikhomirov/vim-glsl'
+NeoBundle 'Eric-Song-Nop/vim-glslx'
+" NeoBundle 'nvim-treesitter/nvim-treesitter'
 
 " colorscheme
 NeoBundle 'vv9k/vim-github-dark'
 NeoBundle 'dracula/vim.git'
+NeoBundle 'gmr458/vscode_modern_theme.nvim'
+NeoBundle 'folke/tokyonight.nvim'
+NeoBundle 'catppuccin/nvim'
+NeoBundle 'rose-pine/neovim'
+NeoBundle 'nyoom-engineering/oxocarbon.nvim'
+NeoBundle 'rebelot/kanagawa.nvim'
+NeoBundle 'EdenEast/nightfox.nvim'
 
 " typescript IDE 2
 NeoBundle 'neoclide/coc.nvim', 'master', {
@@ -73,14 +84,14 @@ NeoBundle 'neoclide/coc.nvim', 'master', {
 
 " textmate-like snippets
 " NeoBundle 'SirVer/ultisnips'
-NeoBundle 's0ber/vim-es6'
+" NeoBundle 's0ber/vim-es6'
 " NeoBundle 's0ber/vim-ultisnips-react'
 
 " syntax errors highlight
 " NeoBundle 'ngmy/vim-rubocop' " rubocop warnings
 
 " tests runners
-" NeoBundle 'vim-test/vim-test'
+NeoBundle 'vim-test/vim-test'
 NeoBundle 'p0deje/vim-cucumber', {'rev': '_merge'}
 
 " Interactive command execution
@@ -102,7 +113,7 @@ NeoBundle 'p0deje/vim-cucumber', {'rev': '_merge'}
 "
 
 " icons
-NeoBundle 'ryanoasis/vim-devicons'
+" NeoBundle 'ryanoasis/vim-devicons'
 
 " make quicklist modifiable
 " NeoBundle 'stefandtw/quickfix-reflector.vim'
@@ -159,7 +170,8 @@ set splitbelow
 set splitright
 
 " colorscheme settings
-colorscheme monokai
+colorscheme nordfox
+" set notermguicolors
 
 " search tweaks
 set hlsearch
@@ -202,6 +214,7 @@ nmap <expr> o &buftype == 'quickfix' ? '<CR>' : 'o'
 " highlight custom files
 autocmd BufRead,BufNewFile *file set filetype=ruby
 au BufNewFile,BufRead *.ejs set filetype=html
+autocmd! BufNewFile,BufRead *.glsl set ft=glslx
 
 " GCC compiler
 au BufEnter *.c compiler gcc
@@ -224,6 +237,7 @@ let g:ctrlp_prompt_mappings = {
   \ 'PrtInsert("c")': ['<c-p>'],
   \ 'AcceptSelection("e")': ['<c-o>', '<cr>']
   \ }
+let g:ctrlp_match_window = 'bottom,order:btt,min:1,max:12,results:30'
 
 " strip trailing whitespaces
 let g:DeleteTrailingWhitespace = 1
@@ -245,10 +259,10 @@ let g:UltiSnipsJumpForwardTrigger='<C-j>'
 let g:UltiSnipsJumpBackwardTrigger='<C-k>'
 
 " typescript 2
-autocmd FileType typescript,typescript.tsx nmap <silent> <Leader>d <Plug>(coc-definition)
-autocmd FileType typescript,typescript.tsx nmap <silent> <Leader>t <Plug>(coc-type-definition)
-autocmd FileType typescript,typescript.tsx nmap <silent> <Leader>r <Plug>(coc-references-used)
-autocmd FileType typescript,typescript.tsx nmap <buffer> <Leader>m :call <SID>show_documentation()<CR>
+autocmd FileType typescript,typescript.tsx,javascript.jsx nmap <silent> <Leader>d <Plug>(coc-definition)
+autocmd FileType typescript,typescript.tsx,javascript.jsx nmap <silent> <Leader>t <Plug>(coc-type-definition)
+autocmd FileType typescript,typescript.tsx,javascript.jsx nmap <silent> <Leader>r <Plug>(coc-references-used)
+autocmd FileType typescript,typescript.tsx,javascript.jsx nmap <buffer> <Leader>m :call <SID>show_documentation()<CR>
 
 function! s:show_documentation()
   if (index(['vim','help'], &filetype) >= 0)
@@ -283,10 +297,12 @@ if neobundle#tap('vim-tmux-runner')
 endif
 
 if neobundle#tap('vim-test')
-  let g:test#strategy = 'vtr'
+  let g:test#strategy = 'neovim_sticky'
+  let test#neovim_sticky#reopen_window = 1
+  let test#ruby#rspec#executable = 'docker compose run --rm ss_test rspec'
 
-  nmap <silent> <Leader>r :TestNearest<Cr>
-  nmap <silent> <Leader>R :TestFile<Cr>
+  nmap <silent> <Leader>s :TestNearest<Cr>
+  nmap <silent> <Leader>S :TestFile<Cr>
   nmap <silent> <Leader>l :TestLast<Cr>
 
   call neobundle#untap()
@@ -334,6 +350,7 @@ if &term =~ '256color'
   " see also http://snk.tuxfamily.org/log/vim-256color-bce.html
   set t_ut=
 endif
+
 
 " Stop using arrows in command mode
 cmap <C-h> <Left>
@@ -411,13 +428,22 @@ nmap <leader>c <C-O>
 " Use the same symbols as TextMate for tabstops and EOLs
 set listchars=tab:▸\ ,eol:¬
 
-" set cursorline
-hi CursorLine term=NONE cterm=NONE guibg=NONE
-hi QuickFixLine ctermbg=NONE
+augroup CustomHighlights
+  autocmd!
+  autocmd VimEnter * hi CocFloating ctermbg=237 guibg=#3a3a3a
+  autocmd VimEnter * hi Normal ctermbg=NONE guibg=NONE
+  autocmd VimEnter * hi NormalNC ctermbg=NONE guibg=NONE
+  autocmd VimEnter * hi NonText ctermbg=NONE guibg=NONE
+  autocmd VimEnter * hi WinSeparator ctermbg=241 ctermfg=241
+  autocmd VimEnter * hi CtrlPLinePre ctermfg=0 guifg=#000000
+  autocmd VimEnter * hi clear QuickFixLine
+  autocmd VimEnter * hi! link CocErrorSign ErrorMsg
+  " autocmd VimEnter * hi! link CocErrorSign Exception
 
-hi CocFloating ctermbg=237
-highlight Normal ctermbg=0
-highlight NonText ctermbg=0
+  " set cursorline
+  " autocmd VimEnter * hi CursorLine term=NONE cterm=NONE guibg=NONE
+  " autocmd VimEnter * hi QuickFixLine ctermbg=NONE
+augroup END
 
 " fix typescript syntax in nvim@0.5.0
 hi link typescriptReserved Keyword
@@ -427,3 +453,23 @@ hi link typescriptNull Type
 " float popup scroll
 nnoremap <nowait><expr> <C-f> coc#float#has_scroll() ? coc#float#scroll(1) : "\<C-f>"
 nnoremap <nowait><expr> <C-b> coc#float#has_scroll() ? coc#float#scroll(0) : "\<C-b>"
+
+" exit terminal mode by pressing Esc
+tnoremap <Esc> <C-\><C-n>
+
+" Output the highlight group under the cursor
+"
+" This function will output the entire stack of hightlight groups being applied. The stack is
+" outputted in the correct order from top to bottom. Vim will walk through the stack from top to
+" bottom and apply the first defined highlight group found.
+function! SynStack()
+  for i1 in synstack(line("."), col("."))
+    let i2 = synIDtrans(i1)
+    let n1 = synIDattr(i1, "name")
+    let n2 = synIDattr(i2, "name")
+    echo n1 "->" n2
+  endfor
+endfunction
+
+" You can also create a convenience mapping
+map <F2> <cmd>call SynStack()<cr>
