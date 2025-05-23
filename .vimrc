@@ -72,15 +72,7 @@ NeoBundle 'rebelot/kanagawa.nvim'
 NeoBundle 'EdenEast/nightfox.nvim'
 
 " typescript IDE 2
-NeoBundle 'neoclide/coc.nvim', 'master', {
-\ 'build' : {
-\     'windows' : 'yarn install --frozen-lockfile',
-\     'cygwin' : 'yarn install --frozen-lockfile',
-\     'mac' : 'yarn install --frozen-lockfile',
-\     'linux' : 'yarn install --frozen-lockfile',
-\     'unix' : 'yarn install --frozen-lockfile'
-\    }
-\ }
+NeoBundle 'neoclide/coc.nvim', { 'branch': 'release', 'build': 'npm ci' }
 
 " textmate-like snippets
 " NeoBundle 'SirVer/ultisnips'
@@ -262,15 +254,13 @@ let g:UltiSnipsJumpBackwardTrigger='<C-k>'
 autocmd FileType typescript,typescript.tsx,javascript.jsx nmap <silent> <Leader>d <Plug>(coc-definition)
 autocmd FileType typescript,typescript.tsx,javascript.jsx nmap <silent> <Leader>t <Plug>(coc-type-definition)
 autocmd FileType typescript,typescript.tsx,javascript.jsx nmap <silent> <Leader>r <Plug>(coc-references-used)
-autocmd FileType typescript,typescript.tsx,javascript.jsx nmap <buffer> <Leader>m :call <SID>show_documentation()<CR>
+autocmd FileType typescript,typescript.tsx,javascript.jsx nmap <buffer> <Leader>m :call ShowDocumentation()<CR>
 
-function! s:show_documentation()
-  if (index(['vim','help'], &filetype) >= 0)
-    execute 'h '.expand('<cword>')
-  elseif (coc#rpc#ready())
+function! ShowDocumentation()
+  if CocAction('hasProvider', 'hover')
     call CocActionAsync('doHover')
   else
-    execute '!' . &keywordprg . " " . expand('<cword>')
+    call feedkeys('m', 'in')
   endif
 endfunction
 
@@ -405,18 +395,21 @@ let g:airline_powerline_fonts = 1
 " MULTIPURPOSE TAB KEY
 " Indent if we're at the beginning of a line. Else, do completion.
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! InsertTabWrapper()
-    let col = col('.') - 1
-    if pumvisible()
-      return "\<c-n>"
-    elseif !col || getline('.')[col - 1] !~ '\k'
-      return "\<tab>"
-    else
-      return coc#refresh()
-    endif
+" Use tab for trigger completion with characters ahead and navigate
+" NOTE: There's always complete item selected by default, you may want to enable
+" no select by `"suggest.noselect": true` in your configuration file
+" NOTE: Use command ':verbose imap <tab>' to make sure tab is not mapped by
+" other plugin before putting this into your config
+inoremap <silent><expr> <TAB>
+      \ coc#pum#visible() ? coc#pum#next(1) :
+      \ CheckBackspace() ? "\<Tab>" :
+      \ coc#refresh()
+inoremap <expr><S-TAB> coc#pum#visible() ? coc#pum#prev(1) : "\<C-h>"
+
+function! CheckBackspace() abort
+  let col = col('.') - 1
+  return !col || getline('.')[col - 1]  =~# '\s'
 endfunction
-autocmd FileType * inoremap <expr> <tab> InsertTabWrapper()
-inoremap <s-tab> <c-p>
 
 set makeprg=gcc\ -Wall\ -o\ %<.out\ %
 
@@ -438,6 +431,8 @@ augroup CustomHighlights
   autocmd VimEnter * hi CtrlPLinePre ctermfg=0 guifg=#000000
   autocmd VimEnter * hi clear QuickFixLine
   autocmd VimEnter * hi! link CocErrorSign ErrorMsg
+  autocmd VimEnter * hi! DiagnosticVirtualTextError guibg=NONE
+  autocmd VimEnter * hi! DiagnosticVirtualTextInfo guibg=NONE
   " autocmd VimEnter * hi! link CocErrorSign Exception
 
   " set cursorline
