@@ -14,12 +14,4 @@ vim.opt.packpath = vim.opt.runtimepath:get()
 vim.cmd('source ~/.vimrc')
 
 require('plugins.nvim-tree').setup()
-
-require('nvim-treesitter.configs').setup {
-  ensure_installed = { 'javascript', 'typescript', 'tsx', 'json', 'html', 'css', 'scss', 'lua', 'vim', 'query' },
-  highlight = {
-    enable = true,
-    vim.api.nvim_set_hl(0, "@variable.builtin.javascript", { link = "@variable" })
-  },
-  indent = { enable = true }
-}
+require('plugins.nvim-treesitter').setup()
