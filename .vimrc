@@ -31,13 +31,9 @@ NeoBundle 'gabesoft/vim-ags'
 
 " fuzzy search
 NeoBundle 'ctrlpvim/ctrlp.vim'               " fuzzy file search
-" NeoBundle 'JazzCore/ctrlp-cmatcher'      " faster and better matcher for CtrlP, requires installation
 NeoBundle 'FelikZ/ctrlp-py-matcher'
-" NeoBundle 'fisadev/vim-ctrlp-cmdpalette' " fuzzy command search
 
-" files tree management
-NeoBundle 'scrooloose/nerdtree'          " project tree navigation
-NeoBundle 'taiansu/nerdtree-ag'          " search via NERDTree
+NeoBundle 'nvim-tree/nvim-tree.lua'
 
 " filetypes support
 NeoBundle 'kchmck/vim-coffee-script'     " support for coffeescript
@@ -113,6 +109,10 @@ set tabstop=2
 set shiftwidth=2
 set expandtab
 
+" Open new split panes to right and bottom, which feels more natural
+set splitbelow
+set splitright
+
 " colorscheme settings
 colorscheme nordfox
 " set notermguicolors
@@ -148,8 +148,6 @@ let g:agprg='ag --hidden --smart-case --column --ignore={".git","node_modules","
 nmap <Leader>ag :Ag!<Space>
 nmap <Leader>as :Ags<Space>
 let g:ag_apply_qmappings=0 " don't apply default mappings
-" never end up in NERDTree when selecting file from quickfix list
-nnoremap <expr> <CR> &buftype == 'quickfix' ? "<C-W>k<C-W>l<C-W>j<C-W>j<C-W>j\<CR>" : '<CR>'
 nmap <expr> o &buftype == 'quickfix' ? '<CR>' : 'o'
 
 " highlight custom files
@@ -208,17 +206,7 @@ function! ShowDocumentation()
   endif
 endfunction
 
-" NERDTree
-" let g:NERDTreeWinPos   = 'right'
-let g:NERDTreeWinSize  = 30
-let g:NERDTreeMinimalUI = 1
-let g:NERDTreeChDirMode = 2
-let NERDTreeIgnore     = ['^tags$', '\.DS_Store$']
-let NERDTreeShowHidden = 0
-
-" NERDTree
-nmap <silent> <Leader>on :NERDTreeFind<Cr><C-w>=
-nmap <silent> <Leader>of :NERDTreeFind<Cr><C-w>=
+nmap <silent> <Leader>of :NvimTreeFindFile<Cr><C-w>=
 
 if neobundle#tap('vim-test')
   let g:test#strategy = 'neovim_sticky'
@@ -238,8 +226,7 @@ autocmd BufNewFile,BufRead *.tsx set filetype=typescript.tsx
 " autocomplete css
 autocmd FileType css set omnifunc=csscomplete#CompleteCSS
 
-" open nerdtree immediately
-autocmd VimEnter * NERDTreeToggle
+autocmd VimEnter * NvimTreeOpen
 
 " allow JSX in normal JS files
 let g:jsx_ext_required = 0
@@ -328,6 +315,7 @@ augroup CustomHighlights
   " use light shade for default text
   autocmd VimEnter * hi Normal ctermbg=NONE guibg=NONE guifg=#e6eaea
   autocmd VimEnter * hi NormalNC ctermbg=NONE guibg=NONE guifg=#e6eaea
+  autocmd VimEnter * hi NvimTreeNormal ctermbg=NONE guibg=NONE guifg=#e6eaea
 
   " autocmd VimEnter * hi NonText ctermbg=NONE guibg=NONE
   " autocmd VimEnter * hi WinSeparator ctermbg=241 ctermfg=241
