@@ -275,6 +275,7 @@ nnoremap * y*
 
 " don't use esc to quit insert mode
 imap <c-c> <esc>
+nnoremap <Esc> <Nop>
 nnoremap <C-c> :nohlsearch<CR>
 
 " ariline icons
