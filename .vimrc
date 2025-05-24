@@ -33,6 +33,7 @@ NeoBundle 'gabesoft/vim-ags'
 NeoBundle 'ctrlpvim/ctrlp.vim'               " fuzzy file search
 NeoBundle 'FelikZ/ctrlp-py-matcher'
 
+" file tree
 NeoBundle 'nvim-tree/nvim-tree.lua'
 
 " filetypes support
@@ -42,16 +43,11 @@ NeoBundle 'tpope/vim-haml'               " support for haml
 NeoBundle 'slim-template/vim-slim'       " support for slim
 NeoBundle 'othree/html5.vim'             " support for html5
 NeoBundle 'derekwyatt/vim-scala'         " support for scala
-" NeoBundle 'pangloss/vim-javascript'      " support for javascript
-NeoBundle 'mxw/vim-jsx'                  " support for jsx
 NeoBundle 'groenewege/vim-less'          " support for less
 NeoBundle 'digitaltoad/vim-pug'          " support for pug (former Jade)
-" NeoBundle 'leafgarland/typescript-vim'   " support for typescript (syntax and indentation)
-" NeoBundle 'peitalin/vim-jsx-typescript'  " support for tsx (syntax and indentation)
-" NeoBundle 'Quramy/tsuquyomi'             " typescript IDE
 " NeoBundle 'tikhomirov/vim-glsl'
 NeoBundle 'Eric-Song-Nop/vim-glslx'
-" NeoBundle 'nvim-treesitter/nvim-treesitter'
+NeoBundle 'nvim-treesitter/nvim-treesitter'
 
 " colorscheme
 NeoBundle 'vv9k/vim-github-dark'
@@ -63,6 +59,7 @@ NeoBundle 'rose-pine/neovim'
 NeoBundle 'nyoom-engineering/oxocarbon.nvim'
 NeoBundle 'rebelot/kanagawa.nvim'
 NeoBundle 'EdenEast/nightfox.nvim'
+NeoBundle 'loctvl842/monokai-pro.nvim'
 
 " typescript IDE 2
 NeoBundle 'neoclide/coc.nvim', { 'branch': 'release', 'build': 'npm ci' }
@@ -114,7 +111,7 @@ set splitbelow
 set splitright
 
 " colorscheme settings
-colorscheme nordfox
+colorscheme rose-pine-moon
 " set notermguicolors
 
 " search tweaks
@@ -193,10 +190,10 @@ let g:DeleteTrailingWhitespace_Action = 'delete'
 " let g:multi_cursor_quit_key='<C-c>'
 
 " typescript 2
-autocmd FileType typescript,typescript.tsx,javascript.jsx nmap <silent> <Leader>d <Plug>(coc-definition)
-autocmd FileType typescript,typescript.tsx,javascript.jsx nmap <silent> <Leader>t <Plug>(coc-type-definition)
-autocmd FileType typescript,typescript.tsx,javascript.jsx nmap <silent> <Leader>r <Plug>(coc-references-used)
-autocmd FileType typescript,typescript.tsx,javascript.jsx nmap <buffer> <Leader>m :call ShowDocumentation()<CR>
+autocmd FileType javascript,javascript.jsx,typescript,typescript.tsx nmap <silent> <Leader>d <Plug>(coc-definition)
+autocmd FileType javascript,javascript.jsx,typescript,typescript.tsx nmap <silent> <Leader>t <Plug>(coc-type-definition)
+autocmd FileType javascript,javascript.jsx,typescript,typescript.tsx nmap <silent> <Leader>r <Plug>(coc-references-used)
+autocmd FileType javascript,javascript.jsx,typescript,typescript.tsx nmap <buffer> <Leader>m :call ShowDocumentation()<CR>
 
 function! ShowDocumentation()
   if CocAction('hasProvider', 'hover')
