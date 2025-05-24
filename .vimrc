@@ -21,7 +21,7 @@ NeoBundle 'jiangmiao/auto-pairs'         " autoclose quotes, brackets, etc
 NeoBundle 'tpope/vim-surround'           " quote selected text
 NeoBundle 'tomtom/tcomment_vim'          " comment and uncomment
 NeoBundle 'DeleteTrailingWhitespace'     " remove trailing whitespaces
-NeoBundle 'terryma/vim-multiple-cursors' " sublime-inspired multiple cursors
+NeoBundle 'mg979/vim-visual-multi', { 'branch': 'master' } " sublime-inspired multiple cursors
 NeoBundle 'tpope/vim-endwise'            " automatically end code blocks
 NeoBundle 'tpope/vim-unimpaired'         " mappings for paired actions
 
@@ -183,14 +183,14 @@ let g:DeleteTrailingWhitespace = 1
 let g:DeleteTrailingWhitespace_Action = 'delete'
 
 " multiple cursors
-let g:multi_cursor_use_default_mapping=0
-let g:multi_cursor_exit_from_insert_mode = 0
-let g:multi_cursor_exit_from_visual_mode=0
-
-let g:multi_cursor_next_key='<C-n>'
-let g:multi_cursor_prev_key='<C-p>'
-let g:multi_cursor_skip_key='<C-x>'
-let g:multi_cursor_quit_key='<C-c>'
+" let g:multi_cursor_use_default_mapping=0
+" let g:multi_cursor_exit_from_insert_mode = 0
+" let g:multi_cursor_exit_from_visual_mode=0
+"
+" let g:multi_cursor_next_key='<C-n>'
+" let g:multi_cursor_prev_key='<C-p>'
+" let g:multi_cursor_skip_key='<C-x>'
+" let g:multi_cursor_quit_key='<C-c>'
 
 " typescript 2
 autocmd FileType typescript,typescript.tsx,javascript.jsx nmap <silent> <Leader>d <Plug>(coc-definition)
