@@ -144,7 +144,7 @@ let g:coc_force_debug = 1
 let mapleader = ','
 
 " Ag tweaks
-let g:agprg='ag --hidden --smart-case --column --ignore={".git","node_modules","*gql.types.tsx"}'
+let g:ag_prg='ag --hidden --smart-case --column --ignore={".git","node_modules","*gql.types.tsx"}'
 nmap <Leader>ag :Ag!<Space>
 nmap <Leader>as :Ags<Space>
 let g:ag_apply_qmappings=0 " don't apply default mappings
