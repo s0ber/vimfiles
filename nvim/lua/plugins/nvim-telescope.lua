@@ -8,6 +8,10 @@ function M.setup()
   vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Telescope buffers' })
   vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = 'Telescope help tags' })
 
+  -- telescope fails to detect some file types, but we can configure it
+  vim.filetype.add({
+    extension = { slim = 'slim' }
+  })
 
   require('telescope').load_extension('fzf')
   require('telescope').setup {
