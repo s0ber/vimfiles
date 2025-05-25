@@ -33,6 +33,10 @@ NeoBundle 'gabesoft/vim-ags'
 NeoBundle 'ctrlpvim/ctrlp.vim'               " fuzzy file search
 NeoBundle 'FelikZ/ctrlp-py-matcher'
 
+NeoBundle 'nvim-telescope/telescope-fzf-native.nvim', { 'build': 'make' }
+NeoBundle 'nvim-lua/plenary.nvim'
+NeoBundle 'nvim-telescope/telescope.nvim', { 'branch': '0.1.x' }
+
 " file tree
 NeoBundle 'nvim-tree/nvim-tree.lua'
 
@@ -142,8 +146,8 @@ let mapleader = ','
 
 " Ag tweaks
 let g:ag_prg='ag --hidden --smart-case --column --ignore={".git","node_modules","*gql.types.tsx"}'
-nmap <Leader>ag :Ag!<Space>
-nmap <Leader>as :Ags<Space>
+" nmap <Leader>ag :Ag!<Space>
+" nmap <Leader>as :Ags<Space>
 let g:ag_apply_qmappings=0 " don't apply default mappings
 nmap <expr> o &buftype == 'quickfix' ? '<CR>' : 'o'
 
@@ -314,6 +318,8 @@ augroup CustomHighlights
   autocmd VimEnter * hi Normal ctermbg=NONE guibg=NONE guifg=#e6eaea
   autocmd VimEnter * hi NormalNC ctermbg=NONE guibg=NONE guifg=#e6eaea
   autocmd VimEnter * hi NvimTreeNormal ctermbg=NONE guibg=NONE guifg=#e6eaea
+  autocmd VimEnter * hi TelescopeNormal guibg=NONE
+  autocmd VimEnter * hi TelescopeBorder guibg=NONE
 
   " autocmd VimEnter * hi NonText ctermbg=NONE guibg=NONE
   " autocmd VimEnter * hi WinSeparator ctermbg=241 ctermfg=241

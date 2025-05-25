@@ -15,3 +15,4 @@ vim.cmd('source ~/.vimrc')
 
 require('plugins.nvim-tree').setup()
 require('plugins.nvim-treesitter').setup()
+require('plugins.nvim-telescope').setup()

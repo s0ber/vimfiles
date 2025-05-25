@@ -15,7 +15,7 @@ function M.setup()
     require("nvim-tree.api").tree.reload()
   end
 
-  local function search_in_dir()
+  local function search_in_dir_ag()
     local api = require("nvim-tree.api")
 
     -- Get the selected node (file or directory) in NvimTree
@@ -48,6 +48,30 @@ function M.setup()
     end)
   end
 
+  local function search_in_dir_telescope()
+    local api = require("nvim-tree.api")
+
+    -- Get the selected node (file or directory) in NvimTree
+    local node = api.tree.get_node_under_cursor()
+    if not node then
+      vim.notify("Maybe another time..", vim.log.levels.WARN)
+      return
+    end
+
+    -- Get directory to search in
+    local dir = node.absolute_path
+    if node.type == "file" then
+      dir = vim.fn.fnamemodify(dir, ":h")
+    end
+
+    -- Unfocus nvim-tree (assumes it's in a vertical split)
+    -- and move to the right/next window
+    vim.cmd("wincmd l")
+
+    -- Run telescope
+    return require('telescope.builtin').live_grep({ search_dirs = { dir } })
+  end
+
   local function my_on_attach(bufnr)
     local api = require "nvim-tree.api"
 
@@ -65,7 +89,7 @@ function M.setup()
     vim.keymap.set("n", "P",              api.fs.paste,                       opts("Paste"))
     vim.keymap.set("n", "p",              api.node.navigate.parent,           opts("Parent Directory"))
     vim.keymap.set("n", "S",              api.node.run.system,                opts("Run System"))
-    vim.keymap.set("n", "s",              search_in_dir,                      opts("Search"))
+    vim.keymap.set("n", "s",              search_in_dir_telescope,            opts("Search"))
     vim.keymap.set("n", "R",              api.fs.rename,                      opts("Rename"))
     vim.keymap.set("n", "r",              api.tree.reload,                    opts("Refresh"))
     vim.keymap.set('n', 'A',              toggle_width_adaptive,              opts('Toggle Adaptive Width'))
