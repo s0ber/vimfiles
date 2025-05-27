@@ -94,6 +94,8 @@ function M.setup()
     vim.keymap.set("n", "r",              api.tree.reload,                    opts("Refresh"))
     vim.keymap.set('n', 'A',              toggle_width_adaptive,              opts('Toggle Adaptive Width'))
     vim.keymap.set("n", "u",              api.tree.change_root_to_parent,     opts("Up"))
+    vim.keymap.set("n", "O",              api.node.open.edit,                 opts("Open"))
+    vim.keymap.set("n", "o",              api.node.open.no_window_picker,     opts("Open: No Window Picker"))
   end
 
   -- get current view width
