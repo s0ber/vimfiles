@@ -22,7 +22,7 @@ NeoBundle 'tpope/vim-surround'           " quote selected text
 NeoBundle 'tomtom/tcomment_vim'          " comment and uncomment
 NeoBundle 'DeleteTrailingWhitespace'     " remove trailing whitespaces
 NeoBundle 'mg979/vim-visual-multi', { 'branch': 'master' } " sublime-inspired multiple cursors
-NeoBundle 'tpope/vim-endwise'            " automatically end code blocks
+" NeoBundle 'tpope/vim-endwise'            " automatically end code blocks
 NeoBundle 'tpope/vim-unimpaired'         " mappings for paired actions
 
 " integration with ag
@@ -52,6 +52,7 @@ NeoBundle 'digitaltoad/vim-pug'          " support for pug (former Jade)
 " NeoBundle 'tikhomirov/vim-glsl'
 NeoBundle 'Eric-Song-Nop/vim-glslx'
 NeoBundle 'nvim-treesitter/nvim-treesitter'
+NeoBundle 'RRethy/nvim-treesitter-endwise' " automatically end code blocks
 
 " colorscheme
 NeoBundle 'vv9k/vim-github-dark'
