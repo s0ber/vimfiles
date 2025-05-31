@@ -162,9 +162,8 @@ au BufEnter *.c compiler gcc
 au BufWritePost *.c make
 
 " Autoclose pipe in Ruby
-autocmd FileType ruby
-  \ let b:AutoPairs = g:AutoPairs |
-  \ let b:AutoPairs['|'] = '|'
+autocmd FileType ruby let b:AutoPairs = AutoPairsDefine({'|' : '|'})
+let g:AutoPairsMultilineClose = 0
 
 " CtrlP
 " PyMatcher for CtrlP
