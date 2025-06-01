@@ -23,7 +23,7 @@ NeoBundle 'tomtom/tcomment_vim'          " comment and uncomment
 NeoBundle 'DeleteTrailingWhitespace'     " remove trailing whitespaces
 NeoBundle 'mg979/vim-visual-multi', { 'branch': 'master' } " sublime-inspired multiple cursors
 " NeoBundle 'tpope/vim-endwise'            " automatically end code blocks
-NeoBundle 'tpope/vim-unimpaired'         " mappings for paired actions
+" NeoBundle 'tpope/vim-unimpaired'         " mappings for paired actions
 
 " integration with ag
 NeoBundle 'rking/ag.vim'
