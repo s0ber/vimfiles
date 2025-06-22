@@ -29,6 +29,9 @@ NeoBundle 'mg979/vim-visual-multi', { 'branch': 'master' } " sublime-inspired mu
 NeoBundle 'rking/ag.vim'
 NeoBundle 'gabesoft/vim-ags'
 
+" smooth scrolling
+NeoBundle 'karb94/neoscroll.nvim'
+
 " fuzzy search
 NeoBundle 'ctrlpvim/ctrlp.vim'               " fuzzy file search
 NeoBundle 'FelikZ/ctrlp-py-matcher'
@@ -212,7 +215,8 @@ nmap <silent> <Leader>of :NvimTreeFindFile<Cr><C-w>=
 if neobundle#tap('vim-test')
   let g:test#strategy = 'neovim_sticky'
   let test#neovim_sticky#reopen_window = 1
-  let test#ruby#rspec#executable = 'docker compose run --rm ss_test rspec'
+  let test#ruby#rspec#executable = 'bin/docker_rspec'
+  let test#neovim#term_position = 'vert'
 
   nmap <silent> <Leader>s :TestNearest<Cr>
   nmap <silent> <Leader>S :TestFile<Cr>
