@@ -2,6 +2,8 @@ local M = {}
 
 function M.setup()
   local builtin = require('telescope.builtin')
+  local action_state = require("telescope.actions.state")
+
   vim.keymap.set('n', '<c-p>', builtin.find_files, { desc = 'Telescope find files' })
   vim.keymap.set('n', '<Tab>', builtin.oldfiles, { desc = 'Recent files' })
   vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Telescope live grep' })
@@ -29,6 +31,11 @@ function M.setup()
           ['<esc>'] = 'close',
           ['<C-j>'] = 'move_selection_next',
           ['<C-k>'] = 'move_selection_previous',
+          ['<C-p>'] = function(prompt_bufnr)
+            local current_picker = action_state.get_current_picker(prompt_bufnr)
+            local text = vim.fn.getreg('+'):gsub("\n", "\\n") -- which register depends on clipboard option
+            current_picker:set_prompt(text, false)
+          end
         }
       }
     },
