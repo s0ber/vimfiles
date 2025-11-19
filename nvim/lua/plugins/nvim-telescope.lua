@@ -18,8 +18,10 @@ function M.setup()
   require('telescope').load_extension('fzf')
   require('telescope').setup {
     defaults = {
+      layout_strategy = 'vertical',
       layout_config = {
         prompt_position = 'top',
+        mirror = true
       },
       sorting_strategy = 'ascending',
       mappings = {
