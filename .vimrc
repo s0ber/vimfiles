@@ -33,8 +33,8 @@ NeoBundle 'gabesoft/vim-ags'
 NeoBundle 'karb94/neoscroll.nvim'
 
 " fuzzy search
-NeoBundle 'ctrlpvim/ctrlp.vim'               " fuzzy file search
-NeoBundle 'FelikZ/ctrlp-py-matcher'
+" NeoBundle 'ctrlpvim/ctrlp.vim'               " fuzzy file search
+" NeoBundle 'FelikZ/ctrlp-py-matcher'
 
 NeoBundle 'nvim-telescope/telescope-fzf-native.nvim', { 'build': 'make' }
 NeoBundle 'nvim-lua/plenary.nvim'
@@ -170,17 +170,20 @@ let g:AutoPairsMultilineClose = 0
 
 " CtrlP
 " PyMatcher for CtrlP
-let g:ctrlp_match_func = { 'match': 'pymatcher#PyMatch' }
+" let g:ctrlp_match_func = { 'match': 'pymatcher#PyMatch' }
 
-let g:ctrlp_switch_buffer = 'Et'
-let g:ctrlp_user_command = 'ag %s --files-with-matches --nocolor -g ""'
-nmap <Tab> :CtrlPMRU<Cr>
-let ctrlp_mruf_relative = 1
-let g:ctrlp_prompt_mappings = {
-  \ 'PrtInsert("c")': ['<c-p>'],
-  \ 'AcceptSelection("e")': ['<c-o>', '<cr>']
-  \ }
-let g:ctrlp_match_window = 'bottom,order:btt,min:1,max:12,results:30'
+" let g:ctrlp_switch_buffer = 'Et'
+" let g:ctrlp_user_command = 'ag %s --files-with-matches --nocolor -g ""'
+" nmap <Tab> :CtrlPMRU<Cr>
+" let ctrlp_mruf_relative = 1
+" let g:ctrlp_prompt_mappings = {
+"   \ 'PrtInsert("c")': ['<c-p>'],
+"   \ 'AcceptSelection("e")': ['<c-o>', '<cr>']
+"   \ }
+" let g:ctrlp_prompt_mappings = {
+"   \ 'AcceptSelection("e")': ['<c-o>', '<cr>']
+"   \ }
+" let g:ctrlp_match_window = 'bottom,order:btt,min:1,max:12,results:30'
 
 " strip trailing whitespaces
 let g:DeleteTrailingWhitespace = 1
@@ -329,7 +332,7 @@ augroup CustomHighlights
   " autocmd VimEnter * hi WinSeparator ctermbg=241 ctermfg=241
 
   " hide > sign in ctrlp menu
-  autocmd VimEnter * hi CtrlPLinePre ctermfg=0 guifg=#000000
+  " autocmd VimEnter * hi CtrlPLinePre ctermfg=0 guifg=#000000
   autocmd VimEnter * hi clear QuickFixLine
   " remove bg from diagnostic virtual messages
   autocmd VimEnter * hi! DiagnosticVirtualTextError guibg=NONE

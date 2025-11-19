@@ -314,5 +314,5 @@
 
 ; Match method calls
 (call
-  receiver: [(call) (identifier) (constant) (integer) (self)]
+  receiver: [(call) (identifier) (constant) (integer) (self) (instance_variable)]
   method: (identifier) @function.method.call)

@@ -2,7 +2,8 @@ local M = {}
 
 function M.setup()
   local builtin = require('telescope.builtin')
-  vim.keymap.set('n', '<leader>ff', builtin.find_files, { desc = 'Telescope find files' })
+  vim.keymap.set('n', '<c-p>', builtin.find_files, { desc = 'Telescope find files' })
+  vim.keymap.set('n', '<Tab>', builtin.oldfiles, { desc = 'Recent files' })
   vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Telescope live grep' })
   vim.keymap.set('n', '<leader>ag', builtin.live_grep, { desc = 'Telescope live grep' })
   vim.keymap.set('n', '<leader>g', builtin.grep_string, { desc = 'Telescope grep selected text' })
@@ -26,6 +27,16 @@ function M.setup()
           ['<esc>'] = 'close',
           ['<C-j>'] = 'move_selection_next',
           ['<C-k>'] = 'move_selection_previous',
+        }
+      }
+    },
+    pickers = {
+      oldfiles = {
+        only_cwd = true,
+        layout_strategy = 'vertical',
+        layout_config = {
+          prompt_position = 'top',
+          mirror = true
         }
       }
     }
