@@ -17,8 +17,12 @@ function M.setup()
     extension = { slim = 'slim' }
   })
 
-  require('telescope').load_extension('fzf')
   require('telescope').setup {
+    extensions = {
+      fzf = {
+        case_mode = 'ignore_case'
+      }
+    },
     defaults = {
       layout_strategy = 'vertical',
       layout_config = {
@@ -50,6 +54,8 @@ function M.setup()
       }
     }
   }
+
+  require('telescope').load_extension('fzf')
 end
 
 return M
