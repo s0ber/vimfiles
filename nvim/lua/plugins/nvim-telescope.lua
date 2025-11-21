@@ -27,7 +27,7 @@ function M.setup()
       layout_strategy = 'vertical',
       layout_config = {
         prompt_position = 'top',
-        mirror = true
+        -- mirror = true
       },
       sorting_strategy = 'ascending',
       mappings = {
@@ -49,7 +49,7 @@ function M.setup()
         layout_strategy = 'vertical',
         layout_config = {
           prompt_position = 'top',
-          mirror = true
+          -- mirror = true
         }
       }
     }
