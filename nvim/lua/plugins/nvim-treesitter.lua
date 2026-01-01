@@ -2,7 +2,7 @@ local M = {}
 
 function M.setup()
   require('nvim-treesitter.configs').setup {
-    ensure_installed = { 'javascript', 'typescript', 'tsx', 'json', 'html', 'css', 'scss', 'lua', 'vim', 'query', 'ruby', 'slim' },
+    ensure_installed = { 'javascript', 'typescript', 'tsx', 'json', 'html', 'css', 'scss', 'lua', 'vim', 'query', 'ruby', 'slim', 'regex' },
     highlight = {
       enable = true,
       additional_vim_regex_highlighting = { 'ruby' }

@@ -55,6 +55,10 @@ NeoBundle 'digitaltoad/vim-pug'          " support for pug (former Jade)
 " NeoBundle 'tikhomirov/vim-glsl'
 NeoBundle 'Eric-Song-Nop/vim-glslx'
 NeoBundle 'nvim-treesitter/nvim-treesitter'
+
+NeoBundle 'folke/snacks.nvim'
+NeoBundle 'NickvanDyke/opencode.nvim'
+
 NeoBundle 'RRethy/nvim-treesitter-endwise' " automatically end code blocks
 
 " colorscheme
