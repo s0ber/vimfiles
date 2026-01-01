@@ -4,6 +4,7 @@ function M.setup()
   local builtin = require('telescope.builtin')
   local action_state = require("telescope.actions.state")
 
+  -- Keep some telescope-specific mappings for specialized tasks
   vim.keymap.set('n', '<c-p>', builtin.find_files, { desc = 'Telescope find files' })
   vim.keymap.set('n', '<Tab>', builtin.oldfiles, { desc = 'Recent files' })
   vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Telescope live grep' })
@@ -11,6 +12,11 @@ function M.setup()
   vim.keymap.set('n', '<leader>g', builtin.grep_string, { desc = 'Telescope grep selected text' })
   vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Telescope buffers' })
   vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = 'Telescope help tags' })
+  
+  -- Additional telescope-specific mappings
+  vim.keymap.set('n', '<leader>fr', builtin.lsp_references, { desc = 'Telescope LSP references' })
+  vim.keymap.set('n', '<leader>fd', builtin.lsp_document_symbols, { desc = 'Telescope document symbols' })
+  vim.keymap.set('n', '<leader>fs', builtin.lsp_workspace_symbols, { desc = 'Telescope workspace symbols' })
 
   -- telescope fails to detect some file types, but we can configure it
   vim.filetype.add({
