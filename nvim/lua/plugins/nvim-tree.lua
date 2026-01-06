@@ -72,6 +72,29 @@ function M.setup()
     return require('telescope.builtin').live_grep({ search_dirs = { dir } })
   end
 
+
+  local api = require('nvim-tree.api')
+  -- Custom function to add marked files to quickfix
+  local function marked_to_quickfix()
+    local marks = api.marks.list()
+    if #marks == 0 then
+      print("No marked files")
+      return
+    end
+
+    local qf_list = {}
+    for _, node in ipairs(marks) do
+      table.insert(qf_list, {
+        filename = node.absolute_path,
+        lnum = 1,
+      })
+    end
+
+    vim.fn.setqflist(qf_list)
+    vim.cmd('copen')
+  end
+
+
   local function my_on_attach(bufnr)
     local api = require "nvim-tree.api"
 
@@ -96,6 +119,9 @@ function M.setup()
     vim.keymap.set("n", "u",              api.tree.change_root_to_parent,     opts("Up"))
     vim.keymap.set("n", "O",              api.node.open.edit,                 opts("Open"))
     vim.keymap.set("n", "o",              api.node.open.no_window_picker,     opts("Open: No Window Picker"))
+
+    vim.keymap.set('n', '<c-q>',      marked_to_quickfix,                 opts("Open Marked in quickfix list"))
+    vim.keymap.set('n', '<c-u>',      api.marks.clear,                    opts('Unmark all files'))
   end
 
   -- get current view width

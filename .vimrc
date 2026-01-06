@@ -57,7 +57,7 @@ NeoBundle 'Eric-Song-Nop/vim-glslx'
 NeoBundle 'nvim-treesitter/nvim-treesitter'
 
 NeoBundle 'folke/snacks.nvim'
-NeoBundle 'NickvanDyke/opencode.nvim'
+NeoBundle 's0ber/opencode.nvim', 'improve-quickfix-context'
 
 NeoBundle 'RRethy/nvim-treesitter-endwise' " automatically end code blocks
 
