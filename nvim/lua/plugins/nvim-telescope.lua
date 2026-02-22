@@ -1,5 +1,34 @@
 local M = {}
 
+local function send_to_qflist_and_select(prompt_bufnr)
+  local action_state = require('telescope.actions.state')
+  local actions = require('telescope.actions')
+
+  local entry = action_state.get_selected_entry()
+
+  actions.send_to_qflist(prompt_bufnr)
+  actions.open_qflist(prompt_bufnr)
+
+  if entry then
+    local qflist = vim.fn.getqflist()
+    local target_filename = entry.filename or (entry.bufnr and vim.fn.bufname(entry.bufnr))
+    local target_lnum = entry.lnum or 1
+
+    local target_abs = target_filename and vim.fn.fnamemodify(target_filename, ':p')
+
+    for i, item in ipairs(qflist) do
+      local item_filename = item.filename or vim.fn.bufname(item.bufnr)
+      local item_abs = vim.fn.fnamemodify(item_filename, ':p')
+
+      if item_abs == target_abs and item.lnum == target_lnum then
+        -- Just move cursor to line i in quickfix window (don't open file)
+        vim.api.nvim_win_set_cursor(0, {i, 0})
+        return
+      end
+    end
+  end
+end
+
 function M.setup()
   local builtin = require('telescope.builtin')
   local action_state = require("telescope.actions.state")
@@ -12,7 +41,7 @@ function M.setup()
   vim.keymap.set('n', '<leader>g', builtin.grep_string, { desc = 'Telescope grep selected text' })
   vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Telescope buffers' })
   vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = 'Telescope help tags' })
-  
+
   -- Additional telescope-specific mappings
   vim.keymap.set('n', '<leader>fr', builtin.lsp_references, { desc = 'Telescope LSP references' })
   vim.keymap.set('n', '<leader>fd', builtin.lsp_document_symbols, { desc = 'Telescope document symbols' })
@@ -41,11 +70,15 @@ function M.setup()
           ['<esc>'] = 'close',
           ['<C-j>'] = 'move_selection_next',
           ['<C-k>'] = 'move_selection_previous',
+          ['<C-q>'] = send_to_qflist_and_select,
           ['<C-p>'] = function(prompt_bufnr)
             local current_picker = action_state.get_current_picker(prompt_bufnr)
             local text = vim.fn.getreg('+'):gsub("\n", "\\n") -- which register depends on clipboard option
             current_picker:set_prompt(text, false)
           end
+        },
+        n = {
+          ['<C-q>'] = send_to_qflist_and_select
         }
       }
     },
