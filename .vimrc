@@ -220,10 +220,12 @@ endfunction
 nmap <silent> <Leader>of :NvimTreeFindFile<Cr><C-w>=
 
 if neobundle#tap('vim-test')
-  let g:test#strategy = 'neovim_sticky'
-  let test#neovim_sticky#reopen_window = 1
+  let test#strategy = 'shtuff'
+  let g:shtuff_receiver = 'vimtest'
   let test#ruby#rspec#executable = 'bin/docker_rspec'
-  let test#neovim#term_position = 'vert'
+  " let g:test#strategy = 'neovim_sticky'
+  " let test#neovim_sticky#reopen_window = 1
+  " let test#neovim#term_position = 'vert'
 
   nmap <silent> <Leader>s :TestNearest<Cr>
   nmap <silent> <Leader>S :TestFile<Cr>
