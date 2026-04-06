@@ -206,7 +206,7 @@ let g:DeleteTrailingWhitespace_Action = 'delete'
 " typescript 2
 autocmd FileType ruby,javascript,javascript.jsx,typescript,typescript.tsx nmap <silent> <Leader>d <Plug>(coc-definition)
 autocmd FileType javascript,javascript.jsx,typescript,typescript.tsx nmap <silent> <Leader>t <Plug>(coc-type-definition)
-autocmd FileType javascript,javascript.jsx,typescript,typescript.tsx nmap <silent> <Leader>r <Plug>(coc-references-used)
+autocmd FileType ruby,javascript,javascript.jsx,typescript,typescript.tsx nmap <silent> <Leader>r <Plug>(coc-references-used)
 autocmd FileType ruby,javascript,javascript.jsx,typescript,typescript.tsx nmap <buffer> <Leader>m :call ShowDocumentation()<CR>
 
 function! ShowDocumentation()
