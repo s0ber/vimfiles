@@ -60,7 +60,7 @@ NeoBundle 'folke/snacks.nvim'
 NeoBundle 'NickvanDyke/opencode.nvim', 'main'
 
 " git
-NeoBundle 'sindrets/diffview.nvim'          " diffs with real buffers: treesitter, LSP, line numbers
+NeoBundle 'axkirillov/unified.nvim'         " inline unified diffs, right in the buffer
 
 NeoBundle 'RRethy/nvim-treesitter-endwise' " automatically end code blocks
 

@@ -1,169 +1,272 @@
 local M = {}
 
--- What each pane shows in its gutter for a line in a given diff state. Vim marks lines that
--- exist on one side only as DiffAdd in *that* buffer, so on the old side ("a") such a line
--- is a removal, on the new side ("b") an addition. Changed lines are "~" on both.
-local line_markers = {
-  DiffAdd    = { a = '%#DiffviewGutterRemove#-%*', b = '%#DiffviewGutterAdd#+%*' },
-  DiffChange = { a = '%#DiffviewGutterChange#~%*', b = '%#DiffviewGutterChange#~%*' },
-  DiffText   = { a = '%#DiffviewGutterChange#~%*', b = '%#DiffviewGutterChange#~%*' }
-}
+-- Multiply each RGB channel of a 24-bit colour, e.g. 0.25 gives a dark tint of it.
+local function scale(color, amount)
+  local r = math.floor(math.floor(color / 65536) % 256 * amount)
+  local g = math.floor(math.floor(color / 256) % 256 * amount)
+  local b = math.floor(color % 256 * amount)
 
--- Gutter for diff panes: line number, then "+" / "-" / "~" for the line's diff state.
--- Filler rows (the dashes) get nothing.
-function M.diff_status_column(side)
-  if vim.v.virtnum ~= 0 then
-    return '%C'
+  return r * 65536 + g * 256 + b
+end
+
+-- Rose-pine moon accents: foam, love, gold. Three hues that cannot be confused for
+-- one another, unlike the theme's own diff backgrounds.
+local accent = { add = 0x9ccfd8, delete = 0xeb6f92, change = 0xf6c177 }
+
+local function define_highlights()
+  vim.api.nvim_set_hl(0, 'UnifiedAdd',    { bg = scale(accent.add,    0.24) })
+  vim.api.nvim_set_hl(0, 'UnifiedDelete', { bg = scale(accent.delete, 0.28) })
+  vim.api.nvim_set_hl(0, 'UnifiedChange', { bg = scale(accent.change, 0.26) })
+end
+
+-- The commit this branch actually forked from, however far master has moved since.
+local function merge_base()
+  local base = vim.fn.systemlist('git merge-base HEAD origin/master')[1]
+
+  if vim.v.shell_error ~= 0 or not base or base == '' then
+    return 'master'
   end
 
-  local id = vim.fn.diff_hlID(vim.v.lnum, 1)
-  local state = id > 0 and vim.fn.synIDattr(id, 'name') or ''
-  local marker = line_markers[state] and line_markers[state][side] or ' '
+  return base
+end
 
-  return '%C%=%l ' .. marker .. ' '
+-- Gutter for the review window: right-aligned line number, then the marker to its right.
+-- Added/changed lines carry their "+"/"~" as extmark signs, which "%s" renders. Removed
+-- lines are virtual lines (v:virtnum < 0) and cannot carry a sign, so draw their "-" here.
+-- Continuation rows of a wrapped line get neither a number nor a marker.
+function M.review_status_column()
+  local virtnum = vim.v.virtnum
+
+  if virtnum < 0 then
+    return '%=%#UnifiedDelete#- %*'
+  end
+
+  if virtnum > 0 then
+    return '%=  '
+  end
+
+  return '%=%l %s'
+end
+
+-- Removed lines are virtual lines, and Neovim draws those from column 0 no matter how far
+-- the window is scrolled sideways - they would sit still while the real lines move. So on
+-- every horizontal scroll, rewrite each one to start at the window's leftcol. The plugin
+-- always writes the full text, so the first time a mark is seen its text is remembered and
+-- every later slice is cut from that original.
+local original_virtual_lines = {} -- [buf][mark id] = { text, ... }
+
+-- The part of "text" from display column "from" onwards (tabs and wide chars aware).
+local function from_display_column(text, from)
+  local width, chars = 0, vim.fn.strchars(text)
+
+  for i = 0, chars - 1 do
+    if width >= from then
+      return vim.fn.strcharpart(text, i)
+    end
+
+    width = width + vim.fn.strdisplaywidth(vim.fn.strcharpart(text, i, 1))
+  end
+
+  return ''
+end
+
+function M.scroll_virtual_lines(win)
+  local buf = vim.api.nvim_win_get_buf(win)
+  local info = vim.fn.getwininfo(win)[1]
+  local leftcol, text_width = info.leftcol, info.width - info.textoff
+  local ns = require('unified.config').ns_id
+
+  local cache = original_virtual_lines[buf] or {}
+  original_virtual_lines[buf] = cache
+  local seen = {}
+
+  for _, mark in ipairs(vim.api.nvim_buf_get_extmarks(buf, ns, 0, -1, { details = true })) do
+    local id, row, col, details = mark[1], mark[2], mark[3], mark[4]
+
+    if details.virt_lines then
+      seen[id] = true
+      cache[id] = cache[id] or vim.tbl_map(function(line) return line[1][1] end, details.virt_lines)
+
+      local shifted = {}
+      for i, text in ipairs(cache[id]) do
+        local visible = from_display_column(text, leftcol)
+        -- Keep the background running to the window edge, like the plugin does.
+        visible = visible .. string.rep(' ', math.max(0, text_width - vim.fn.strdisplaywidth(visible)))
+        shifted[i] = { { visible, details.virt_lines[i][1][2] } }
+      end
+
+      vim.api.nvim_buf_set_extmark(buf, ns, row, col, {
+        id = id,
+        virt_lines = shifted,
+        virt_lines_above = details.virt_lines_above
+      })
+    end
+  end
+
+  -- Forget marks the plugin has since replaced.
+  for id in pairs(cache) do
+    if not seen[id] then cache[id] = nil end
+  end
+end
+
+local function in_review_tab()
+  return vim.t.unified_review == true
+end
+
+-- Show the working tree diffed against "ref". Opens in its own tab the first time so the
+-- layout underneath is untouched; from inside a review, swaps the base in place.
+local function open_review(ref)
+  vim.fn.system({ 'git', 'rev-parse', '--verify', '--quiet', ref .. '^{commit}' })
+
+  if vim.v.shell_error ~= 0 then
+    vim.notify('Unknown git ref: ' .. ref, vim.log.levels.ERROR)
+    return
+  end
+
+  if in_review_tab() then
+    vim.cmd('Unified reset')
+    vim.cmd('Unified ' .. ref)
+    return
+  end
+
+  local launch_tab = vim.api.nvim_get_current_tabpage()
+  vim.cmd('Unified -t ' .. ref)
+
+  -- The plugin resolves the ref asynchronously and only then creates the tab, so wait for
+  -- its main window to appear in a tab other than this one, then tag and prepare it. That
+  -- window is the one every reviewed file opens into, so preparing it once is enough.
+  local tries = 0
+
+  local function claim_review_tab()
+    tries = tries + 1
+    local win = require('unified.state').main_win
+
+    if win and vim.api.nvim_win_is_valid(win) and vim.api.nvim_win_get_tabpage(win) ~= launch_tab then
+      vim.t[vim.api.nvim_win_get_tabpage(win)].unified_review = true
+      -- .vimrc merges signs into the number column; give them their own slot here.
+      vim.wo[win].signcolumn = 'yes:1'
+      vim.wo[win].statuscolumn = "%{%v:lua.require'plugins.git'.review_status_column()%}"
+      return
+    end
+
+    if tries < 100 then
+      vim.defer_fn(claim_review_tab, 30)
+    end
+  end
+
+  vim.defer_fn(claim_review_tab, 30)
+end
+
+local function close_review()
+  vim.cmd('Unified reset')
+
+  if in_review_tab() and #vim.api.nvim_list_tabpages() > 1 then
+    vim.cmd('tabclose')
+  end
+end
+
+local function toggle_review(ref)
+  return function()
+    if in_review_tab() then
+      close_review()
+    else
+      open_review(ref)
+    end
+  end
 end
 
 function M.setup()
-  local actions = require('diffview.actions')
+  define_highlights()
+  vim.api.nvim_create_autocmd('ColorScheme', { callback = define_highlights, desc = 'Unified diff colours' })
 
-  -- "linematch" re-aligns the lines inside a hunk so that a line with no counterpart is
-  -- marked as added/removed instead of being paired positionally and called "changed".
-  -- Neovim's default 'diffopt' already names it, but the diff engine only honours it once
-  -- the option is set explicitly - so set it, with a higher hunk-size limit than the default.
-  vim.opt.diffopt:remove('linematch:40')
-  vim.opt.diffopt:append('linematch:120')
-
-  -- Moving the cursor down the file list opens that file's diff straight away, the way
-  -- a preview pane behaves. Diffview's default "j"/"k" only move the cursor and wait
-  -- for "<cr>"; these are the same actions its "<tab>"/"<s-tab>" already use.
-  local function preview_as_you_move(panel)
-    return {
-      { 'n', 'q', '<cmd>DiffviewClose<cr>', { desc = 'Close review' } },
-      { 'n', 'j', actions.select_next_entry, { desc = 'Open the next ' .. panel } },
-      { 'n', '<down>', actions.select_next_entry, { desc = 'Open the next ' .. panel } },
-      { 'n', 'k', actions.select_prev_entry, { desc = 'Open the previous ' .. panel } },
-      { 'n', '<up>', actions.select_prev_entry, { desc = 'Open the previous ' .. panel } }
-    }
-  end
-
-  require('diffview').setup({
-    enhanced_diff_hl = true,
-    view = {
-      default = { layout = 'diff2_horizontal', winbar_info = false },
-      file_history = { layout = 'diff2_horizontal', winbar_info = true },
-      merge_tool = { layout = 'diff3_mixed', disable_diagnostics = true }
-    },
-    file_panel = {
-      -- A flat list of changed files instead of a directory tree ("i" toggles it).
-      listing_style = 'list',
-      win_config = { position = 'left', width = 40 }
-    },
-    hooks = {
-      -- No wrapping here on purpose: vim aligns diff panes by logical line, so a wrapped
-      -- line on one side pushes everything below it out of step with the other.
-      diff_buf_win_enter = function(_, winid, ctx)
-        vim.wo[winid].statuscolumn =
-          "%{%v:lua.require'plugins.git'.diff_status_column('" .. ctx.symbol .. "')%}"
-      end
-    },
-    keymaps = {
-      -- "q" closes the whole review from anywhere inside it.
-      view = { { 'n', 'q', '<cmd>DiffviewClose<cr>', { desc = 'Close review' } } },
-      file_panel = preview_as_you_move('file'),
-      file_history_panel = preview_as_you_move('commit')
+  require('unified').setup({
+    highlights = { add = 'UnifiedAdd', delete = 'UnifiedDelete', change = 'UnifiedChange' },
+    line_symbols = { add = '+', delete = '-', change = '~' },
+    tab = true,
+    file_tree = {
+      width = 40,
+      focus = true -- land in the file list, ready to walk through it
     }
   })
 
-  local function review_toggle()
-    if require('diffview.lib').get_current_view() then
-      vim.cmd('DiffviewClose')
-    else
-      vim.cmd('DiffviewOpen')
-    end
-  end
-
-  -- The commit this branch actually forked from, however far master has moved since.
-  local function merge_base()
-    local base = vim.fn.systemlist('git merge-base HEAD origin/master')[1]
-
-    if vim.v.shell_error ~= 0 or not base or base == '' then
-      return 'master'
-    end
-
-    return base
-  end
-
-  -- Multiply each RGB channel of a 24-bit colour, e.g. 0.25 gives a dark tint of it.
-  local function scale(color, amount)
-    local r = math.floor(math.floor(color / 65536) % 256 * amount)
-    local g = math.floor(math.floor(color / 256) % 256 * amount)
-    local b = math.floor(color % 256 * amount)
-
-    return r * 65536 + g * 256 + b
-  end
-
-  -- Accents for the three kinds of change. Rose-pine's own "changed" background is
-  -- almost the same magenta as its "removed" one, so the changed colour is replaced
-  -- with an amber that cannot be mistaken for a removal.
-  local accent = { add = 0x9ccfd8, remove = 0xeb6f92, change = 0xf6c177 }
-
-  local function tune_diff_colors()
-    -- Filler lines (the dashes where one side has nothing) are drawn with DiffDelete,
-    -- which diffview maps to DiffviewDiffDeleteDim. It links to Comment by default,
-    -- far too loud - use a much darker shade of it instead.
-    local comment = vim.api.nvim_get_hl(0, { name = 'Comment', link = false })
-    vim.api.nvim_set_hl(0, 'DiffviewDiffDeleteDim', { fg = scale(comment.fg or 0x6e6a86, 0.22), bg = 'NONE' })
-
-    -- Changed lines: amber tint for the line, stronger amber for the changed text in it.
-    vim.api.nvim_set_hl(0, 'DiffviewDiffChange', { bg = scale(accent.change, 0.26) })
-    vim.api.nvim_set_hl(0, 'DiffviewDiffText',   { bg = scale(accent.change, 0.42) })
-
-    -- Gutter markers, as coloured glyphs (the diff* groups themes define often only carry
-    -- a background, which would paint a block behind the glyph instead).
-    vim.api.nvim_set_hl(0, 'DiffviewGutterAdd',    { fg = accent.add,    bold = true })
-    vim.api.nvim_set_hl(0, 'DiffviewGutterRemove', { fg = accent.remove, bold = true })
-    vim.api.nvim_set_hl(0, 'DiffviewGutterChange', { fg = accent.change, bold = true })
-  end
-
-  vim.api.nvim_create_autocmd('ColorScheme', { callback = tune_diff_colors, desc = 'Diffview colours' })
-  tune_diff_colors()
-
-  -- Diff panes are kept in step by 'scrollbind', but that only fires when the *current*
-  -- window scrolls. A mouse wheel over the other pane scrolls it directly, so the panes
-  -- drift apart. For a scrollbound window under the mouse, scroll it via nvim_win_call
-  -- instead - that makes it current just long enough for the sync to run. Any other
-  -- window gets the default wheel behaviour, untouched.
-  local function wheel(key, motion, axis)
-    local default = vim.api.nvim_replace_termcodes(key, true, false, true)
-    local scroll = vim.api.nvim_replace_termcodes(motion, true, false, true)
-    local fallback = axis == 'hor' and 6 or 3 -- vim's own 'mousescroll' defaults
-
-    return function()
-      local win = vim.fn.getmousepos().winid
-
-      if win == 0 or not vim.wo[win].scrollbind then
-        vim.api.nvim_feedkeys(default, 'n', false)
-        return
+  -- In the file list, moving the cursor opens that file's diff straight away.
+  -- "q" there closes the whole review, not just the list.
+  vim.api.nvim_create_autocmd('FileType', {
+    pattern = 'unified_tree',
+    callback = function(event)
+      local actions = require('unified.file_tree.actions')
+      local function map(lhs, rhs, desc)
+        vim.keymap.set('n', lhs, rhs, { buffer = event.buf, desc = desc })
       end
 
-      local amount = tonumber(vim.o.mousescroll:match(axis .. ':(%d+)')) or fallback
-      vim.api.nvim_win_call(win, function() vim.cmd('normal! ' .. amount .. scroll) end)
+      map('j',      function() actions.move_cursor_and_open_file(1) end,  'Open the next file')
+      map('<down>', function() actions.move_cursor_and_open_file(1) end,  'Open the next file')
+      map('k',      function() actions.move_cursor_and_open_file(-1) end, 'Open the previous file')
+      map('<up>',   function() actions.move_cursor_and_open_file(-1) end, 'Open the previous file')
+      map('<cr>',   actions.toggle_node,                                  'Open this file')
+      map('o',      actions.toggle_node,                                  'Open this file')
+      map('q',      close_review,                                         'Close review')
+
+      -- The plugin parks the cursor on the first file but leaves the window showing
+      -- whatever the review was launched from, so the list and the diff disagree until
+      -- you move. It places that cursor only once an async "git status" comes back, so
+      -- poll briefly for a file to be under the cursor, then open it.
+      local tries = 0
+
+      local function open_first_file()
+        tries = tries + 1
+
+        if tries > 100 or not vim.api.nvim_buf_is_valid(event.buf) then
+          return
+        end
+
+        local win = vim.fn.bufwinid(event.buf)
+
+        if win ~= -1 then
+          local line = vim.api.nvim_win_get_cursor(win)[1] - 1
+          local node = require('unified.file_tree.state').line_to_node[line]
+
+          if node and not node.is_dir then
+            vim.api.nvim_win_call(win, actions.toggle_node)
+            return
+          end
+        end
+
+        vim.defer_fn(open_first_file, 30)
+      end
+
+      vim.defer_fn(open_first_file, 30)
     end
-  end
+  })
 
-  local desc = { desc = 'Scroll, keeping diff panes in sync' }
-  vim.keymap.set({ 'n', 'x' }, '<ScrollWheelDown>',  wheel('<ScrollWheelDown>',  '<C-e>', 'ver'), desc)
-  vim.keymap.set({ 'n', 'x' }, '<ScrollWheelUp>',    wheel('<ScrollWheelUp>',    '<C-y>', 'ver'), desc)
-  vim.keymap.set({ 'n', 'x' }, '<ScrollWheelRight>', wheel('<ScrollWheelRight>', 'zl',    'hor'), desc)
-  vim.keymap.set({ 'n', 'x' }, '<ScrollWheelLeft>',  wheel('<ScrollWheelLeft>',  'zh',    'hor'), desc)
+  vim.api.nvim_create_autocmd('WinScrolled', {
+    callback = function()
+      local win = require('unified.state').main_win
 
-  vim.keymap.set('n', '<leader>vv', review_toggle,                             { desc = 'Review working tree' })
-  vim.keymap.set('n', '<leader>vb', function() vim.cmd('DiffviewOpen ' .. merge_base()) end,
-                                                                              { desc = 'Review branch vs master' })
-  vim.keymap.set('n', '<leader>vl', '<cmd>DiffviewOpen HEAD~1<cr>',            { desc = 'Review last commit' })
-  vim.keymap.set('n', '<leader>vh', '<cmd>DiffviewFileHistory<cr>',            { desc = 'Repo history' })
-  vim.keymap.set('n', '<leader>vf', '<cmd>DiffviewFileHistory --follow %<cr>', { desc = 'File history' })
-  vim.keymap.set('n', '<leader>vc', function() Snacks.picker.git_log() end,    { desc = 'Recent commits' })
+      if in_review_tab() and win and vim.api.nvim_win_is_valid(win) then
+        M.scroll_virtual_lines(win)
+      end
+    end,
+    desc = 'Scroll removed lines sideways with the rest of the diff'
+  })
+
+  local navigation = require('unified.navigation')
+  local hunks = require('unified.hunk_actions')
+
+  vim.keymap.set('n', '<leader>vv', toggle_review('HEAD'),                            { desc = 'Review working tree' })
+  vim.keymap.set('n', '<leader>vb', function() open_review(merge_base()) end,         { desc = 'Review branch vs master' })
+  vim.keymap.set('n', '<leader>vl', function() open_review('HEAD~1') end,             { desc = 'Review last commit' })
+  vim.keymap.set('n', '<leader>vp', function() require('unified').pick_commit() end,  { desc = 'Review against a picked commit' })
+  vim.keymap.set('n', '<leader>vq', close_review,                                     { desc = 'Close review' })
+
+  vim.keymap.set('n', '<leader>vh', function() Snacks.picker.git_log() end,           { desc = 'Repo history' })
+  vim.keymap.set('n', '<leader>vf', function() Snacks.picker.git_log_file() end,      { desc = 'File history' })
+
+  vim.keymap.set('n', ']h', navigation.next_hunk,                                     { desc = 'Next hunk' })
+  vim.keymap.set('n', '[h', navigation.previous_hunk,                                 { desc = 'Previous hunk' })
+  vim.keymap.set('n', '<leader>vs', hunks.stage_hunk,                                 { desc = 'Stage hunk' })
+  vim.keymap.set('n', '<leader>vS', hunks.unstage_hunk,                               { desc = 'Unstage hunk' })
+  vim.keymap.set('n', '<leader>vr', hunks.revert_hunk,                                { desc = 'Revert hunk (discards the change)' })
 end
 
 return M
