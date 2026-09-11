@@ -50,6 +50,11 @@ function M.review_status_column()
     return '%=  '
   end
 
+  -- A closed fold ("N unchanged lines") is not a line; leave its gutter empty too.
+  if vim.fn.foldclosed(vim.v.lnum) == vim.v.lnum then
+    return '%=  '
+  end
+
   return '%=%l %s'
 end
 
