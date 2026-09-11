@@ -17,6 +17,11 @@ local function define_highlights()
   vim.api.nvim_set_hl(0, 'UnifiedAdd',    { bg = scale(accent.add,    0.24) })
   vim.api.nvim_set_hl(0, 'UnifiedDelete', { bg = scale(accent.delete, 0.28) })
   vim.api.nvim_set_hl(0, 'UnifiedChange', { bg = scale(accent.change, 0.26) })
+
+  -- The "N unchanged lines" fold lines: a dimmed shade of Comment, no background, so
+  -- they read as gaps rather than content. Rose-pine's Folded uses the full text colour.
+  local comment = vim.api.nvim_get_hl(0, { name = 'Comment', link = false })
+  vim.api.nvim_set_hl(0, 'UnifiedFolded', { fg = scale(comment.fg or 0x908caa, 0.6), bg = 'NONE', italic = true })
 end
 
 -- The commit this branch actually forked from, however far master has moved since.
@@ -74,6 +79,7 @@ local function fold_unchanged(win)
     vim.wo.foldlevel = 0
     vim.wo.foldtext = "v:lua.require'plugins.git'.fold_text()"
     vim.opt_local.fillchars:append({ fold = ' ' })
+    vim.opt_local.winhighlight:append({ Folded = 'UnifiedFolded' })
     vim.cmd('silent! normal! zE') -- drop the folds from the previous render
 
     if #marks == 0 then
