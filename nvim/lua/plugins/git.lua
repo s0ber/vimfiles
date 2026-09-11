@@ -145,6 +145,8 @@ function M.setup()
       map('<cr>',   actions.toggle_node,                                  'Open this file')
       map('o',      actions.toggle_node,                                  'Open this file')
       map('q',      close_review,                                         'Close review')
+      -- A double click would otherwise select a word; treat it as a click.
+      map('<2-LeftMouse>', actions.toggle_node,                           'Open this file')
 
       -- The plugin parks the cursor on the first file but leaves the window showing
       -- whatever the review was launched from, so the list and the diff disagree until
@@ -177,6 +179,20 @@ function M.setup()
       vim.defer_fn(open_first_file, 30)
     end
   })
+
+  -- Clicking a file in the list opens it. Mouse clicks are resolved against the buffer
+  -- that has focus *before* the click, so a buffer-local map in the list would only work
+  -- on the second click when coming from the diff. Instead let the click land normally
+  -- (moving focus and cursor), then open whatever it landed on if that was the list.
+  vim.keymap.set('n', '<LeftMouse>', function()
+    vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<LeftMouse>', true, false, true), 'n', false)
+
+    vim.schedule(function()
+      if vim.bo.filetype == 'unified_tree' then
+        require('unified.file_tree.actions').toggle_node()
+      end
+    end)
+  end, { desc = 'Click (opens files in the review list)' })
 
   local navigation = require('unified.navigation')
   local hunks = require('unified.hunk_actions')
