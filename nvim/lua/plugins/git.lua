@@ -74,6 +74,35 @@ function M.setup()
   vim.api.nvim_create_autocmd('ColorScheme', { callback = dim_diff_fillers, desc = 'Dim diffview filler lines' })
   dim_diff_fillers()
 
+  -- Diff panes are kept in step by 'scrollbind', but that only fires when the *current*
+  -- window scrolls. A mouse wheel over the other pane scrolls it directly, so the panes
+  -- drift apart. For a scrollbound window under the mouse, scroll it via nvim_win_call
+  -- instead - that makes it current just long enough for the sync to run. Any other
+  -- window gets the default wheel behaviour, untouched.
+  local function wheel(key, motion, axis)
+    local default = vim.api.nvim_replace_termcodes(key, true, false, true)
+    local scroll = vim.api.nvim_replace_termcodes(motion, true, false, true)
+    local fallback = axis == 'hor' and 6 or 3 -- vim's own 'mousescroll' defaults
+
+    return function()
+      local win = vim.fn.getmousepos().winid
+
+      if win == 0 or not vim.wo[win].scrollbind then
+        vim.api.nvim_feedkeys(default, 'n', false)
+        return
+      end
+
+      local amount = tonumber(vim.o.mousescroll:match(axis .. ':(%d+)')) or fallback
+      vim.api.nvim_win_call(win, function() vim.cmd('normal! ' .. amount .. scroll) end)
+    end
+  end
+
+  local desc = { desc = 'Scroll, keeping diff panes in sync' }
+  vim.keymap.set({ 'n', 'x' }, '<ScrollWheelDown>',  wheel('<ScrollWheelDown>',  '<C-e>', 'ver'), desc)
+  vim.keymap.set({ 'n', 'x' }, '<ScrollWheelUp>',    wheel('<ScrollWheelUp>',    '<C-y>', 'ver'), desc)
+  vim.keymap.set({ 'n', 'x' }, '<ScrollWheelRight>', wheel('<ScrollWheelRight>', 'zl',    'hor'), desc)
+  vim.keymap.set({ 'n', 'x' }, '<ScrollWheelLeft>',  wheel('<ScrollWheelLeft>',  'zh',    'hor'), desc)
+
   vim.keymap.set('n', '<leader>vv', review_toggle,                             { desc = 'Review working tree' })
   vim.keymap.set('n', '<leader>vb', function() vim.cmd('DiffviewOpen ' .. merge_base()) end,
                                                                               { desc = 'Review branch vs master' })
