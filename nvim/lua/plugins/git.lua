@@ -48,6 +48,72 @@ function M.review_status_column()
   return '%=%l %s'
 end
 
+-- ----------------------------------------------------------------------------------
+-- Folding away the unchanged parts of a reviewed file, the way GitHub collapses them,
+-- so a diff to a 5000-line file is a few screens. The plugin marks every changed row
+-- with an extmark (added/changed lines carry a highlight, removed lines hang off the
+-- row they were removed from), so those rows plus some context are kept and every other
+-- stretch of at least two lines is folded.
+-- ----------------------------------------------------------------------------------
+local FOLD_CONTEXT = 3
+
+function M.fold_text()
+  return string.format('  ⋯ %d unchanged lines', vim.v.foldend - vim.v.foldstart + 1)
+end
+
+local function fold_unchanged(win)
+  if not (win and vim.api.nvim_win_is_valid(win)) then
+    return
+  end
+
+  local buf = vim.api.nvim_win_get_buf(win)
+  local marks = vim.api.nvim_buf_get_extmarks(buf, require('unified.config').ns_id, 0, -1, { details = true })
+
+  vim.api.nvim_win_call(win, function()
+    vim.wo.foldmethod = 'manual'
+    vim.wo.foldlevel = 0
+    vim.wo.foldtext = "v:lua.require'plugins.git'.fold_text()"
+    vim.opt_local.fillchars:append({ fold = ' ' })
+    vim.cmd('silent! normal! zE') -- drop the folds from the previous render
+
+    if #marks == 0 then
+      return
+    end
+
+    local keep = {}
+    for _, mark in ipairs(marks) do
+      local row, details = mark[2] + 1, mark[4]
+      if details.line_hl_group or details.virt_lines or details.sign_text then
+        for r = row - FOLD_CONTEXT, row + FOLD_CONTEXT do
+          keep[r] = true
+        end
+      end
+    end
+
+    local last = vim.api.nvim_buf_line_count(buf)
+    local start
+
+    for r = 1, last + 1 do
+      if r <= last and not keep[r] then
+        start = start or r
+      elseif start then
+        if r - start >= 2 then
+          vim.cmd(string.format('%d,%dfold', start, r - 1))
+        end
+        start = nil
+      end
+    end
+  end)
+end
+
+-- Run one of the file-list actions, then fold whatever it opened in the review window.
+local function opening(action)
+  return function(...)
+    action(...)
+    fold_unchanged(require('unified.state').main_win)
+  end
+end
+
 local function in_review_tab()
   return vim.t.unified_review == true
 end
@@ -85,6 +151,7 @@ local function open_review(ref)
       -- .vimrc merges signs into the number column; give them their own slot here.
       vim.wo[win].signcolumn = 'yes:1'
       vim.wo[win].statuscolumn = "%{%v:lua.require'plugins.git'.review_status_column()%}"
+      fold_unchanged(win)
       return
     end
 
@@ -138,15 +205,20 @@ function M.setup()
         vim.keymap.set('n', lhs, rhs, { buffer = event.buf, desc = desc })
       end
 
-      map('j',      function() actions.move_cursor_and_open_file(1) end,  'Open the next file')
-      map('<down>', function() actions.move_cursor_and_open_file(1) end,  'Open the next file')
-      map('k',      function() actions.move_cursor_and_open_file(-1) end, 'Open the previous file')
-      map('<up>',   function() actions.move_cursor_and_open_file(-1) end, 'Open the previous file')
-      map('<cr>',   actions.toggle_node,                                  'Open this file')
-      map('o',      actions.toggle_node,                                  'Open this file')
-      map('q',      close_review,                                         'Close review')
+      local open_next = opening(function() actions.move_cursor_and_open_file(1) end)
+      local open_prev = opening(function() actions.move_cursor_and_open_file(-1) end)
+      local open_this = opening(actions.toggle_node)
+
+      map('j',      open_next,    'Open the next file')
+      map('<down>', open_next,    'Open the next file')
+      map('k',      open_prev,    'Open the previous file')
+      map('<up>',   open_prev,    'Open the previous file')
+      map('<cr>',   open_this,    'Open this file')
+      map('o',      open_this,    'Open this file')
+      map('l',      open_this,    'Open this file')
+      map('q',      close_review, 'Close review')
       -- A double click would otherwise select a word; treat it as a click.
-      map('<2-LeftMouse>', actions.toggle_node,                           'Open this file')
+      map('<2-LeftMouse>', open_this, 'Open this file')
 
       -- The plugin parks the cursor on the first file but leaves the window showing
       -- whatever the review was launched from, so the list and the diff disagree until
@@ -168,7 +240,7 @@ function M.setup()
           local node = require('unified.file_tree.state').line_to_node[line]
 
           if node and not node.is_dir then
-            vim.api.nvim_win_call(win, actions.toggle_node)
+            vim.api.nvim_win_call(win, opening(actions.toggle_node))
             return
           end
         end
@@ -189,7 +261,7 @@ function M.setup()
 
     vim.schedule(function()
       if vim.bo.filetype == 'unified_tree' then
-        require('unified.file_tree.actions').toggle_node()
+        opening(require('unified.file_tree.actions').toggle_node)()
       end
     end)
   end, { desc = 'Click (opens files in the review list)' })
@@ -208,9 +280,34 @@ function M.setup()
 
   vim.keymap.set('n', ']h', navigation.next_hunk,                                     { desc = 'Next hunk' })
   vim.keymap.set('n', '[h', navigation.previous_hunk,                                 { desc = 'Previous hunk' })
-  vim.keymap.set('n', '<leader>vs', hunks.stage_hunk,                                 { desc = 'Stage hunk' })
-  vim.keymap.set('n', '<leader>vS', hunks.unstage_hunk,                               { desc = 'Unstage hunk' })
-  vim.keymap.set('n', '<leader>vr', hunks.revert_hunk,                                { desc = 'Revert hunk (discards the change)' })
+
+  -- The same on <C-]> / <C-t>, vim's tag-jump pair. In any buffer that is not showing a
+  -- review diff the keys keep their normal meaning (<C-[> is not an option: in a
+  -- terminal it is indistinguishable from <Esc>).
+  local function in_review_or(key, move)
+    local default = vim.api.nvim_replace_termcodes(key, true, false, true)
+
+    return function()
+      if require('unified.state').is_active() and #require('unified.hunk_store').get(0) > 0 then
+        move()
+      else
+        vim.api.nvim_feedkeys(default, 'n', false)
+      end
+    end
+  end
+
+  vim.keymap.set('n', '<C-]>', in_review_or('<C-]>', navigation.next_hunk),     { desc = 'Next hunk (tag jump elsewhere)' })
+  vim.keymap.set('n', '<C-t>', in_review_or('<C-t>', navigation.previous_hunk), { desc = 'Previous hunk (tag pop elsewhere)' })
+  local function refolding(action)
+    return function()
+      action()
+      vim.defer_fn(function() fold_unchanged(require('unified.state').main_win) end, 100)
+    end
+  end
+
+  vim.keymap.set('n', '<leader>vs', refolding(hunks.stage_hunk),                      { desc = 'Stage hunk' })
+  vim.keymap.set('n', '<leader>vS', refolding(hunks.unstage_hunk),                    { desc = 'Unstage hunk' })
+  vim.keymap.set('n', '<leader>vr', refolding(hunks.revert_hunk),                     { desc = 'Revert hunk (discards the change)' })
 end
 
 return M
