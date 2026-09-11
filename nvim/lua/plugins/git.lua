@@ -48,67 +48,6 @@ function M.review_status_column()
   return '%=%l %s'
 end
 
--- Removed lines are virtual lines, and Neovim draws those from column 0 no matter how far
--- the window is scrolled sideways - they would sit still while the real lines move. So on
--- every horizontal scroll, rewrite each one to start at the window's leftcol. The plugin
--- always writes the full text, so the first time a mark is seen its text is remembered and
--- every later slice is cut from that original.
-local original_virtual_lines = {} -- [buf][mark id] = { text, ... }
-
--- The part of "text" from display column "from" onwards (tabs and wide chars aware).
-local function from_display_column(text, from)
-  local width, chars = 0, vim.fn.strchars(text)
-
-  for i = 0, chars - 1 do
-    if width >= from then
-      return vim.fn.strcharpart(text, i)
-    end
-
-    width = width + vim.fn.strdisplaywidth(vim.fn.strcharpart(text, i, 1))
-  end
-
-  return ''
-end
-
-function M.scroll_virtual_lines(win)
-  local buf = vim.api.nvim_win_get_buf(win)
-  local info = vim.fn.getwininfo(win)[1]
-  local leftcol, text_width = info.leftcol, info.width - info.textoff
-  local ns = require('unified.config').ns_id
-
-  local cache = original_virtual_lines[buf] or {}
-  original_virtual_lines[buf] = cache
-  local seen = {}
-
-  for _, mark in ipairs(vim.api.nvim_buf_get_extmarks(buf, ns, 0, -1, { details = true })) do
-    local id, row, col, details = mark[1], mark[2], mark[3], mark[4]
-
-    if details.virt_lines then
-      seen[id] = true
-      cache[id] = cache[id] or vim.tbl_map(function(line) return line[1][1] end, details.virt_lines)
-
-      local shifted = {}
-      for i, text in ipairs(cache[id]) do
-        local visible = from_display_column(text, leftcol)
-        -- Keep the background running to the window edge, like the plugin does.
-        visible = visible .. string.rep(' ', math.max(0, text_width - vim.fn.strdisplaywidth(visible)))
-        shifted[i] = { { visible, details.virt_lines[i][1][2] } }
-      end
-
-      vim.api.nvim_buf_set_extmark(buf, ns, row, col, {
-        id = id,
-        virt_lines = shifted,
-        virt_lines_above = details.virt_lines_above
-      })
-    end
-  end
-
-  -- Forget marks the plugin has since replaced.
-  for id in pairs(cache) do
-    if not seen[id] then cache[id] = nil end
-  end
-end
-
 local function in_review_tab()
   return vim.t.unified_review == true
 end
@@ -237,17 +176,6 @@ function M.setup()
 
       vim.defer_fn(open_first_file, 30)
     end
-  })
-
-  vim.api.nvim_create_autocmd('WinScrolled', {
-    callback = function()
-      local win = require('unified.state').main_win
-
-      if in_review_tab() and win and vim.api.nvim_win_is_valid(win) then
-        M.scroll_virtual_lines(win)
-      end
-    end,
-    desc = 'Scroll removed lines sideways with the rest of the diff'
   })
 
   local navigation = require('unified.navigation')
