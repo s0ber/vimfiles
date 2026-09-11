@@ -28,6 +28,16 @@ function M.setup()
       listing_style = 'list',
       win_config = { position = 'left', width = 40 }
     },
+    hooks = {
+      -- Diff panes inherit the global "nowrap" from .vimrc. Wrap them so long lines are
+      -- readable without scrolling sideways. "breakindent" keeps continuation rows
+      -- aligned with the code's indentation, "linebreak" wraps at words, not mid-token.
+      diff_buf_win_enter = function(_, winid)
+        vim.wo[winid].wrap = true
+        vim.wo[winid].linebreak = true
+        vim.wo[winid].breakindent = true
+      end
+    },
     keymaps = {
       -- "q" closes the whole review from anywhere inside it.
       view = { { 'n', 'q', '<cmd>DiffviewClose<cr>', { desc = 'Close review' } } },
