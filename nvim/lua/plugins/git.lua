@@ -1,7 +1,37 @@
 local M = {}
 
+-- What each pane shows in its gutter for a line in a given diff state. Vim marks lines that
+-- exist on one side only as DiffAdd in *that* buffer, so on the old side ("a") such a line
+-- is a removal, on the new side ("b") an addition. Changed lines are "~" on both.
+local line_markers = {
+  DiffAdd    = { a = '%#DiffviewGutterRemove#-%*', b = '%#DiffviewGutterAdd#+%*' },
+  DiffChange = { a = '%#DiffviewGutterChange#~%*', b = '%#DiffviewGutterChange#~%*' },
+  DiffText   = { a = '%#DiffviewGutterChange#~%*', b = '%#DiffviewGutterChange#~%*' }
+}
+
+-- Gutter for diff panes: line number, then "+" / "-" / "~" for the line's diff state.
+-- Filler rows (the dashes) get nothing.
+function M.diff_status_column(side)
+  if vim.v.virtnum ~= 0 then
+    return '%C'
+  end
+
+  local id = vim.fn.diff_hlID(vim.v.lnum, 1)
+  local state = id > 0 and vim.fn.synIDattr(id, 'name') or ''
+  local marker = line_markers[state] and line_markers[state][side] or ' '
+
+  return '%C%=%l ' .. marker .. ' '
+end
+
 function M.setup()
   local actions = require('diffview.actions')
+
+  -- "linematch" re-aligns the lines inside a hunk so that a line with no counterpart is
+  -- marked as added/removed instead of being paired positionally and called "changed".
+  -- Neovim's default 'diffopt' already names it, but the diff engine only honours it once
+  -- the option is set explicitly - so set it, with a higher hunk-size limit than the default.
+  vim.opt.diffopt:remove('linematch:40')
+  vim.opt.diffopt:append('linematch:120')
 
   -- Moving the cursor down the file list opens that file's diff straight away, the way
   -- a preview pane behaves. Diffview's default "j"/"k" only move the cursor and wait
@@ -29,13 +59,11 @@ function M.setup()
       win_config = { position = 'left', width = 40 }
     },
     hooks = {
-      -- Diff panes inherit the global "nowrap" from .vimrc. Wrap them so long lines are
-      -- readable without scrolling sideways. "breakindent" keeps continuation rows
-      -- aligned with the code's indentation, "linebreak" wraps at words, not mid-token.
-      diff_buf_win_enter = function(_, winid)
-        vim.wo[winid].wrap = true
-        vim.wo[winid].linebreak = true
-        vim.wo[winid].breakindent = true
+      -- No wrapping here on purpose: vim aligns diff panes by logical line, so a wrapped
+      -- line on one side pushes everything below it out of step with the other.
+      diff_buf_win_enter = function(_, winid, ctx)
+        vim.wo[winid].statuscolumn =
+          "%{%v:lua.require'plugins.git'.diff_status_column('" .. ctx.symbol .. "')%}"
       end
     },
     keymaps = {
@@ -65,24 +93,40 @@ function M.setup()
     return base
   end
 
-  -- The "-----" filler lines (where one side has nothing to show) are drawn with
-  -- DiffDelete, which diffview maps to DiffviewDiffDeleteDim. That links to Comment by
-  -- default, which is far too loud. Derive a much darker shade from it instead, so this
-  -- keeps working across colorschemes rather than hardcoding a rose-pine hex.
-  local function dim_diff_fillers()
-    local comment = vim.api.nvim_get_hl(0, { name = 'Comment', link = false })
-    local fg = comment.fg or 0x6e6a86
-    local amount = 0.22
+  -- Multiply each RGB channel of a 24-bit colour, e.g. 0.25 gives a dark tint of it.
+  local function scale(color, amount)
+    local r = math.floor(math.floor(color / 65536) % 256 * amount)
+    local g = math.floor(math.floor(color / 256) % 256 * amount)
+    local b = math.floor(color % 256 * amount)
 
-    local r = math.floor(math.floor(fg / 65536) % 256 * amount)
-    local g = math.floor(math.floor(fg / 256) % 256 * amount)
-    local b = math.floor(fg % 256 * amount)
-
-    vim.api.nvim_set_hl(0, 'DiffviewDiffDeleteDim', { fg = r * 65536 + g * 256 + b, bg = 'NONE' })
+    return r * 65536 + g * 256 + b
   end
 
-  vim.api.nvim_create_autocmd('ColorScheme', { callback = dim_diff_fillers, desc = 'Dim diffview filler lines' })
-  dim_diff_fillers()
+  -- Accents for the three kinds of change. Rose-pine's own "changed" background is
+  -- almost the same magenta as its "removed" one, so the changed colour is replaced
+  -- with an amber that cannot be mistaken for a removal.
+  local accent = { add = 0x9ccfd8, remove = 0xeb6f92, change = 0xf6c177 }
+
+  local function tune_diff_colors()
+    -- Filler lines (the dashes where one side has nothing) are drawn with DiffDelete,
+    -- which diffview maps to DiffviewDiffDeleteDim. It links to Comment by default,
+    -- far too loud - use a much darker shade of it instead.
+    local comment = vim.api.nvim_get_hl(0, { name = 'Comment', link = false })
+    vim.api.nvim_set_hl(0, 'DiffviewDiffDeleteDim', { fg = scale(comment.fg or 0x6e6a86, 0.22), bg = 'NONE' })
+
+    -- Changed lines: amber tint for the line, stronger amber for the changed text in it.
+    vim.api.nvim_set_hl(0, 'DiffviewDiffChange', { bg = scale(accent.change, 0.26) })
+    vim.api.nvim_set_hl(0, 'DiffviewDiffText',   { bg = scale(accent.change, 0.42) })
+
+    -- Gutter markers, as coloured glyphs (the diff* groups themes define often only carry
+    -- a background, which would paint a block behind the glyph instead).
+    vim.api.nvim_set_hl(0, 'DiffviewGutterAdd',    { fg = accent.add,    bold = true })
+    vim.api.nvim_set_hl(0, 'DiffviewGutterRemove', { fg = accent.remove, bold = true })
+    vim.api.nvim_set_hl(0, 'DiffviewGutterChange', { fg = accent.change, bold = true })
+  end
+
+  vim.api.nvim_create_autocmd('ColorScheme', { callback = tune_diff_colors, desc = 'Diffview colours' })
+  tune_diff_colors()
 
   -- Diff panes are kept in step by 'scrollbind', but that only fires when the *current*
   -- window scrolls. A mouse wheel over the other pane scrolls it directly, so the panes
