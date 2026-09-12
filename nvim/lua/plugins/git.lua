@@ -649,6 +649,14 @@ local function setup_pickers(has_unified)
     vim.wo.spell = true
     vim.api.nvim_win_set_cursor(0, { 1, 0 })
 
+    -- However the split goes away - committed, :q, :q!, :x on an untouched message -
+    -- go back where we came from rather than wherever nvim's "previous window" points.
+    vim.api.nvim_create_autocmd('WinClosed', {
+      pattern = tostring(vim.api.nvim_get_current_win()),
+      once = true,
+      callback = function() vim.schedule(return_to_origin) end
+    })
+
     vim.api.nvim_create_autocmd('BufWritePost', {
       buffer = 0,
       once = true,
@@ -664,8 +672,15 @@ local function setup_pickers(has_unified)
 
         -- One line, after clearing the ":w" message - a second line would trigger
         -- vim's "Press ENTER" prompt.
-        vim.api.nvim_buf_delete(event.buf, { force = true })
-        return_to_origin()
+        -- Close the split after the write has fully finished, not during it: ":x" and
+        -- ":wq" still have their own quit to do, and if the split were already gone that
+        -- quit would hit whatever window became current instead. Either way WinClosed
+        -- above returns focus.
+        vim.schedule(function()
+          if vim.api.nvim_buf_is_valid(event.buf) then
+            vim.api.nvim_buf_delete(event.buf, { force = true })
+          end
+        end)
         vim.cmd('redraw')
         local lines = vim.split(vim.trim(result.stdout), '\n')
         vim.notify(lines[1] .. (lines[2] and ('  (' .. vim.trim(lines[2]) .. ')') or ''), vim.log.levels.INFO)
