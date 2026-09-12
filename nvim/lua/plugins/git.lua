@@ -23,7 +23,7 @@ local function define_highlights()
   local comment = vim.api.nvim_get_hl(0, { name = 'Comment', link = false })
   vim.api.nvim_set_hl(0, 'UnifiedFolded', { fg = scale(comment.fg or 0x908caa, 0.6), bg = 'NONE', italic = true })
 
-  -- Snacks' "fancy" diff previews (,vv ,vd ,vh ,vf). Its defaults paint *unchanged* context
+  -- Snacks' "fancy" diff previews (,vv ,vd ,h ,vf). Its defaults paint *unchanged* context
   -- lines with DiffChange - rose-pine's muddy orange - which reads as if everything changed.
   -- Context gets no background, and add/delete reuse the review's colours so the preview
   -- and the inline review look like the same tool. The LineNr variants are the number
@@ -506,7 +506,7 @@ local function setup_pickers(has_unified)
     }), opts or {}))
   end
 
-  vim.keymap.set('n', '<leader>vh', function() commit_log() end,                        { desc = 'Repo history' })
+  vim.keymap.set('n', '<leader>h',  function() commit_log() end,                        { desc = 'Repo history' })
   vim.keymap.set('n', '<leader>vf', function() commit_log({ current_file = true }) end, { desc = 'File history' })
   -- Stage or unstage the selected rows (or the row under the cursor). Snacks' own
   -- git_stage starts one git process per selected row simultaneously, and they trample
@@ -721,12 +721,85 @@ local function setup_pickers(has_unified)
     })
   end
 
+  -- Throw away the selected changes (or the one under the cursor), after a yes/no. Files
+  -- go back to HEAD whether their change was staged or not; untracked ones are deleted,
+  -- since "discard" for a new file can only mean that. Hunks are reverse-applied, from
+  -- the index as well when they were staged. There is no undo for any of it.
+  local function discard_selected(picker)
+    local items = {}
+    for _, item in ipairs(picker.list.selected) do
+      items[#items + 1] = picker:resolve(item)
+    end
+    if #items == 0 then
+      items = { picker:current() }
+    end
+
+    local tracked, untracked, hunks = {}, {}, {}
+    for _, item in ipairs(items) do
+      if item.status then
+        table.insert(item.status == '??' and untracked or tracked, item.file)
+      elseif item.diff and item.staged ~= nil then
+        table.insert(hunks, item)
+      end
+    end
+
+    local total = #tracked + #untracked + #hunks
+    if total == 0 then
+      return
+    end
+
+    local parts = {}
+    if #tracked > 0 then parts[#parts + 1] = #tracked .. ' file' .. (#tracked > 1 and 's' or '') end
+    if #untracked > 0 then parts[#parts + 1] = #untracked .. ' untracked file' .. (#untracked > 1 and 's (deleted)' or ' (deleted)') end
+    if #hunks > 0 then parts[#parts + 1] = #hunks .. ' hunk' .. (#hunks > 1 and 's' or '') end
+    local what = total == 1 and (tracked[1] or untracked[1] or (hunks[1].file .. ' hunk')) or table.concat(parts, ', ')
+
+    Snacks.picker.util.confirm('Discard changes to ' .. what .. '? This cannot be undone.', function()
+      local cwd = items[1].cwd or vim.fn.getcwd()
+      local queue = {}
+
+      if #tracked > 0 then
+        local cmd = { 'git', 'restore', '--source=HEAD', '--staged', '--worktree', '--' }
+        vim.list_extend(cmd, tracked)
+        table.insert(queue, { cmd = cmd })
+      end
+      if #untracked > 0 then
+        local cmd = { 'git', 'clean', '--force', '--' }
+        vim.list_extend(cmd, untracked)
+        table.insert(queue, { cmd = cmd })
+      end
+      for _, hunk in ipairs(hunks) do
+        local cmd = { 'git', 'apply', '--reverse' }
+        if hunk.staged then table.insert(cmd, '--index') end
+        table.insert(queue, { cmd = cmd, input = hunk.diff .. '\n' })
+      end
+
+      local function run_next()
+        local job = table.remove(queue, 1)
+        if not job then
+          picker:refresh() -- rows are gone for good, so a full reload is the right thing here
+          return
+        end
+        vim.system(job.cmd, { cwd = cwd, stdin = job.input }, vim.schedule_wrap(function(result)
+          if result.code ~= 0 then
+            vim.notify(table.concat(job.cmd, ' ') .. ' failed:\n' .. vim.trim(result.stderr or ''), vim.log.levels.ERROR)
+          end
+          run_next()
+        end))
+      end
+
+      run_next()
+    end)
+  end
+
   -- Working-tree pickers: <Tab> stages/unstages from the list as well as the search box,
-  -- so <C-a> then <Tab> stages everything in one go. "c" commits what is staged.
+  -- so <C-a> then <Tab> stages everything in one go. "c" commits what is staged, "X"
+  -- discards the selection (after confirmation).
   local function worktree_picker(opts)
     return diff_picker(vim.tbl_deep_extend('force', {
       actions = {
         stage_selected = stage_selected,
+        discard_selected = discard_selected,
         commit = function(picker)
           picker:close()
           commit_staged()
@@ -737,12 +810,14 @@ local function setup_pickers(has_unified)
         end
       },
       win = {
-        list = { keys = { ['<Tab>'] = 'stage_selected', ['c'] = 'commit', ['C'] = 'amend' } },
+        list = { keys = { ['<Tab>'] = 'stage_selected', ['c'] = 'commit', ['C'] = 'amend', ['X'] = 'discard_selected' } },
         input = {
           keys = {
             ['<Tab>'] = { 'stage_selected', mode = { 'n', 'i' } },
             ['c'] = { 'commit', mode = 'n' },
-            ['C'] = { 'amend', mode = 'n' }
+            ['C'] = { 'amend', mode = 'n' },
+            ['X'] = { 'discard_selected', mode = 'n' },
+            ['<c-r>'] = false -- snacks' own restore: no batching, and it fails on untracked files
           }
         }
       }
