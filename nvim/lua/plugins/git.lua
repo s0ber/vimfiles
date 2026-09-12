@@ -318,17 +318,40 @@ function M.setup()
     }
   }
 
+  -- Scroll the diff preview a single line, view only, cursor untouched. Bound to
+  -- <C-j>/<C-k>, which the list does not need (j/k already walk it); <C-f>/<C-b> keep
+  -- their half-window jumps for covering ground.
+  local function preview_line(motion)
+    local keys = vim.api.nvim_replace_termcodes(motion, true, false, true)
+
+    return function(picker)
+      if picker.preview.win:valid() then
+        vim.api.nvim_win_call(picker.preview.win.win, function() vim.cmd('normal! ' .. keys) end)
+      end
+    end
+  end
+
   -- "o" goes one level in, "u" one level up: list -> diff (a normal buffer to scroll and
   -- search) -> back to the list. The commit pickers extend this a level further.
   local function diff_picker(opts)
     return vim.tbl_deep_extend('force', {
       layout = diff_layout,
       focus = 'list',
+      actions = {
+        preview_line_down = preview_line('<C-e>'),
+        preview_line_up = preview_line('<C-y>')
+      },
       win = {
-        list = { keys = { ['o'] = 'focus_preview' } },
+        list = { keys = { ['o'] = 'focus_preview', ['<C-j>'] = 'preview_line_down', ['<C-k>'] = 'preview_line_up' } },
         preview = { keys = { ['o'] = 'focus_list', ['u'] = 'focus_list' } },
-        -- The same from the search box, but only in normal mode - typed "o"/"u" stay text.
-        input = { keys = { ['o'] = { 'focus_preview', mode = 'n' } } }
+        -- The same from the search box; "o"/"u" only in normal mode so typing them stays text.
+        input = {
+          keys = {
+            ['o'] = { 'focus_preview', mode = 'n' },
+            ['<C-j>'] = { 'preview_line_down', mode = { 'n', 'i' } },
+            ['<C-k>'] = { 'preview_line_up', mode = { 'n', 'i' } }
+          }
+        }
       }
     }, opts)
   end
