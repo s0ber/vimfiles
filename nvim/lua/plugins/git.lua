@@ -392,7 +392,17 @@ local function setup_pickers(has_unified)
             ['<C-l>'] = 'focus_preview' -- the diff is to the right...
           }
         },
-        preview = { keys = { ['o'] = 'focus_list', ['u'] = 'focus_list', ['<C-c>'] = 'cancel', ['<C-h>'] = 'focus_list' } }, -- ...and the list to the left
+        preview = {
+          keys = {
+            ['o'] = 'focus_list',
+            ['u'] = 'focus_list',
+            ['<C-c>'] = 'cancel',
+            ['<C-h>'] = 'focus_list', -- ...and the list to the left
+            -- .vimrc has these as window moves, which would leave the picker and close it.
+            ['<C-j>'] = 'preview_line_down',
+            ['<C-k>'] = 'preview_line_up'
+          }
+        },
         -- The same from the search box; "o"/"u" only in normal mode so typing them stays text.
         input = {
           keys = {
