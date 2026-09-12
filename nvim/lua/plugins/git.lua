@@ -22,6 +22,19 @@ local function define_highlights()
   -- they read as gaps rather than content. Rose-pine's Folded uses the full text colour.
   local comment = vim.api.nvim_get_hl(0, { name = 'Comment', link = false })
   vim.api.nvim_set_hl(0, 'UnifiedFolded', { fg = scale(comment.fg or 0x908caa, 0.6), bg = 'NONE', italic = true })
+
+  -- Snacks' "fancy" diff previews (,vg ,vd ,vh ,vf). Its defaults paint *unchanged* context
+  -- lines with DiffChange - rose-pine's muddy orange - which reads as if everything changed.
+  -- Context gets no background, and add/delete reuse the review's colours so the preview
+  -- and the inline review look like the same tool. The LineNr variants are the number
+  -- column: a touch lighter than the line, like snacks does itself.
+  local line_nr = vim.api.nvim_get_hl(0, { name = 'LineNr', link = false }).fg or 0x6e6a86
+  vim.api.nvim_set_hl(0, 'SnacksDiffContext',       { link = 'Normal' })
+  vim.api.nvim_set_hl(0, 'SnacksDiffContextLineNr', { link = 'LineNr' })
+  vim.api.nvim_set_hl(0, 'SnacksDiffAdd',           { link = 'UnifiedAdd' })
+  vim.api.nvim_set_hl(0, 'SnacksDiffDelete',        { link = 'UnifiedDelete' })
+  vim.api.nvim_set_hl(0, 'SnacksDiffAddLineNr',     { fg = line_nr, bg = scale(accent.add,    0.32) })
+  vim.api.nvim_set_hl(0, 'SnacksDiffDeleteLineNr',  { fg = line_nr, bg = scale(accent.delete, 0.36) })
 end
 
 -- The commit this branch actually forked from, however far master has moved since.
@@ -286,8 +299,37 @@ function M.setup()
   vim.keymap.set('n', '<leader>vp', function() require('unified').pick_commit() end,  { desc = 'Review against a picked commit' })
   vim.keymap.set('n', '<leader>vq', close_review,                                     { desc = 'Close review' })
 
-  vim.keymap.set('n', '<leader>vh', function() Snacks.picker.git_log() end,           { desc = 'Repo history' })
-  vim.keymap.set('n', '<leader>vf', function() Snacks.picker.git_log_file() end,      { desc = 'File history' })
+  -- Commit pickers. Snacks' default confirm for these is "git_checkout", which would
+  -- detach HEAD on Enter; open a review against the chosen commit instead.
+  local function review_picked_commit(picker, item)
+    picker:close()
+
+    if item and item.commit then
+      open_review(item.commit)
+    end
+  end
+
+  -- Diff pickers fill the screen: a narrow list on the left, the diff preview gets the rest.
+  local diff_layout = {
+    fullscreen = true,
+    layout = {
+      box = 'horizontal',
+      {
+        box = 'vertical',
+        width = 0.3,
+        border = true,
+        title = '{title} {live} {flags}',
+        { win = 'input', height = 1, border = 'bottom' },
+        { win = 'list', border = 'none' }
+      },
+      { win = 'preview', title = '{preview}', border = true }
+    }
+  }
+
+  vim.keymap.set('n', '<leader>vh', function() Snacks.picker.git_log({ layout = diff_layout, confirm = review_picked_commit }) end,      { desc = 'Repo history' })
+  vim.keymap.set('n', '<leader>vf', function() Snacks.picker.git_log_file({ layout = diff_layout, confirm = review_picked_commit }) end, { desc = 'File history' })
+  vim.keymap.set('n', '<leader>vg', function() Snacks.picker.git_status({ layout = diff_layout }) end,                                   { desc = 'Changed files (stage with Tab)' })
+  vim.keymap.set('n', '<leader>vd', function() Snacks.picker.git_diff({ layout = diff_layout }) end,                                     { desc = 'All hunks' })
 
   vim.keymap.set('n', ']h', navigation.next_hunk,                                     { desc = 'Next hunk' })
   vim.keymap.set('n', '[h', navigation.previous_hunk,                                 { desc = 'Previous hunk' })
