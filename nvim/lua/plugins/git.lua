@@ -339,6 +339,31 @@ function M.setup()
   -- Snacks' own default for Enter is "git_checkout", which would detach HEAD.
   local commit_files, commit_log
 
+  -- Put the list cursor on a given commit once the (streamed) log has loaded it, so
+  -- coming back from a commit's files lands where you left rather than at the top.
+  local function select_commit(picker, sha)
+    local tries = 0
+
+    local function attempt()
+      tries = tries + 1
+
+      if picker.closed or tries > 100 then
+        return
+      end
+
+      for idx, item in ipairs(picker:items()) do
+        if item.commit == sha then
+          picker.list:view(idx)
+          return
+        end
+      end
+
+      vim.defer_fn(attempt, 30)
+    end
+
+    attempt()
+  end
+
   commit_files = function(commit, back)
     local parent = commit .. '~1'
     vim.fn.system({ 'git', 'rev-parse', '--verify', '--quiet', parent .. '^{commit}' })
@@ -366,13 +391,14 @@ function M.setup()
     }))
   end
 
-  commit_log = function(opts)
-    local reopen = function() commit_log(opts) end
-
+  commit_log = function(opts, selected)
     Snacks.picker.git_log(vim.tbl_deep_extend('force', diff_picker({
+      on_show = selected and function(picker) select_commit(picker, selected) end or nil,
       confirm = function(picker, item)
         picker:close()
-        if item and item.commit then commit_files(item.commit, reopen) end
+        if item and item.commit then
+          commit_files(item.commit, function() commit_log(opts, item.commit) end)
+        end
       end,
       actions = {
         review = function(picker, item)
