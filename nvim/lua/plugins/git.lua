@@ -342,7 +342,14 @@ function M.setup()
         preview_line_up = preview_line('<C-y>')
       },
       win = {
-        list = { keys = { ['o'] = 'focus_preview', ['<C-j>'] = 'preview_line_down', ['<C-k>'] = 'preview_line_up' } },
+        list = {
+          keys = {
+            ['o'] = 'focus_preview',
+            ['<C-j>'] = 'preview_line_down',
+            ['<C-k>'] = 'preview_line_up',
+            ['/'] = false -- snacks makes it jump to the filter box; keep vim's own search instead
+          }
+        },
         preview = { keys = { ['o'] = 'focus_list', ['u'] = 'focus_list' } },
         -- The same from the search box; "o"/"u" only in normal mode so typing them stays text.
         input = {
