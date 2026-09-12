@@ -643,8 +643,12 @@ local function setup_pickers(has_unified)
           return
         end
 
-        vim.notify(vim.trim(result.stdout), vim.log.levels.INFO)
+        -- One line, after clearing the ":w" message - a second line would trigger
+        -- vim's "Press ENTER" prompt.
         vim.api.nvim_buf_delete(event.buf, { force = true })
+        vim.cmd('redraw')
+        local lines = vim.split(vim.trim(result.stdout), '\n')
+        vim.notify(lines[1] .. (lines[2] and ('  (' .. vim.trim(lines[2]) .. ')') or ''), vim.log.levels.INFO)
       end
     })
   end
