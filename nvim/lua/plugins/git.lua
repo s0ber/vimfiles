@@ -299,16 +299,6 @@ function M.setup()
   vim.keymap.set('n', '<leader>vp', function() require('unified').pick_commit() end,  { desc = 'Review against a picked commit' })
   vim.keymap.set('n', '<leader>vq', close_review,                                     { desc = 'Close review' })
 
-  -- Commit pickers. Snacks' default confirm for these is "git_checkout", which would
-  -- detach HEAD on Enter; open a review against the chosen commit instead.
-  local function review_picked_commit(picker, item)
-    picker:close()
-
-    if item and item.commit then
-      open_review(item.commit)
-    end
-  end
-
   -- Diff pickers fill the screen: a narrow list on the left, the diff preview gets the rest.
   local diff_layout = {
     fullscreen = true,
@@ -326,8 +316,57 @@ function M.setup()
     }
   }
 
-  vim.keymap.set('n', '<leader>vh', function() Snacks.picker.git_log({ layout = diff_layout, confirm = review_picked_commit }) end,      { desc = 'Repo history' })
-  vim.keymap.set('n', '<leader>vf', function() Snacks.picker.git_log_file({ layout = diff_layout, confirm = review_picked_commit }) end, { desc = 'File history' })
+  -- Commit pickers. Enter drills into the commit: a list of the files it touched, each
+  -- previewed with its own diff. <C-o> there goes back to the commits. <C-y> on a commit
+  -- opens an inline review against it instead (working tree vs that commit).
+  -- Snacks' own default for Enter is "git_checkout", which would detach HEAD.
+  local commit_files, commit_log
+
+  commit_files = function(commit, back)
+    local parent = commit .. '~1'
+    vim.fn.system({ 'git', 'rev-parse', '--verify', '--quiet', parent .. '^{commit}' })
+
+    if vim.v.shell_error ~= 0 then
+      parent = '4b825dc642cb6eb9a060e54bf8d69288fbee4904' -- git's empty tree, for a root commit
+    end
+
+    Snacks.picker.git_diff({
+      title = 'Files in ' .. commit:sub(1, 8),
+      cmd_args = { parent, commit },
+      group = true,   -- one row per file, not per hunk
+      staged = false, -- otherwise the picker would also list the index
+      layout = diff_layout,
+      actions = {
+        back = function(picker)
+          picker:close()
+          back()
+        end
+      },
+      win = { input = { keys = { ['<C-o>'] = { 'back', mode = { 'n', 'i' } } } } }
+    })
+  end
+
+  commit_log = function(opts)
+    local reopen = function() commit_log(opts) end
+
+    Snacks.picker.git_log(vim.tbl_extend('force', {
+      layout = diff_layout,
+      confirm = function(picker, item)
+        picker:close()
+        if item and item.commit then commit_files(item.commit, reopen) end
+      end,
+      actions = {
+        review = function(picker, item)
+          picker:close()
+          if item and item.commit then open_review(item.commit) end
+        end
+      },
+      win = { input = { keys = { ['<C-y>'] = { 'review', mode = { 'n', 'i' } } } } }
+    }, opts or {}))
+  end
+
+  vim.keymap.set('n', '<leader>vh', function() commit_log() end,                        { desc = 'Repo history' })
+  vim.keymap.set('n', '<leader>vf', function() commit_log({ current_file = true }) end, { desc = 'File history' })
   vim.keymap.set('n', '<leader>vg', function() Snacks.picker.git_status({ layout = diff_layout }) end,                                   { desc = 'Changed files (stage with Tab)' })
   vim.keymap.set('n', '<leader>vd', function() Snacks.picker.git_diff({ layout = diff_layout }) end,                                     { desc = 'All hunks' })
 
