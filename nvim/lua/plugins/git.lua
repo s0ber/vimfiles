@@ -496,8 +496,83 @@ local function setup_pickers(has_unified)
 
   vim.keymap.set('n', '<leader>vh', function() commit_log() end,                        { desc = 'Repo history' })
   vim.keymap.set('n', '<leader>vf', function() commit_log({ current_file = true }) end, { desc = 'File history' })
-  vim.keymap.set('n', '<leader>vg', function() Snacks.picker.git_status(diff_picker({})) end,   { desc = 'Changed files (stage with Tab)' })
-  vim.keymap.set('n', '<leader>vd', function() Snacks.picker.git_diff(diff_picker({})) end,     { desc = 'All hunks' })
+  -- Stage or unstage the selected rows (or the row under the cursor). Snacks' own
+  -- git_stage starts one git process per selected row simultaneously, and they trample
+  -- each other on .git/index.lock - "select all, stage" ends up staging one file and
+  -- failing the rest. Files go in a single git call; hunks (which need "git apply")
+  -- run one after another.
+  local function stage_selected(picker)
+    local items = picker:selected({ fallback = true })
+    local files, hunks = {}, {}
+
+    for _, item in ipairs(items) do
+      if item.status then
+        table.insert(files, item)
+      elseif item.diff and item.staged ~= nil then
+        table.insert(hunks, item)
+      end
+    end
+
+    if #files == 0 and #hunks == 0 then
+      return
+    end
+
+    local queue = {}
+
+    if #files > 0 then
+      -- Toggle the group: unstage only when every selected file is already fully staged.
+      local all_staged = true
+      for _, file in ipairs(files) do
+        if file.status:sub(2) ~= ' ' then all_staged = false end
+      end
+
+      local cmd = all_staged and { 'git', 'restore', '--staged', '--' } or { 'git', 'add', '--' }
+      for _, file in ipairs(files) do table.insert(cmd, file.file) end
+      table.insert(queue, { cmd = cmd })
+    end
+
+    for _, hunk in ipairs(hunks) do
+      local cmd = { 'git', 'apply', '--cached' }
+      if hunk.staged then table.insert(cmd, '--reverse') end
+      -- Snacks joins the patch lines without a final newline; git apply insists on one.
+      table.insert(queue, { cmd = cmd, input = hunk.diff .. '\n' })
+    end
+
+    local cwd = items[1].cwd or vim.fn.getcwd()
+
+    local function run_next()
+      local job = table.remove(queue, 1)
+
+      if not job then
+        picker:refresh()
+        return
+      end
+
+      vim.system(job.cmd, { cwd = cwd, stdin = job.input }, vim.schedule_wrap(function(result)
+        if result.code ~= 0 then
+          vim.notify(table.concat(job.cmd, ' ') .. ' failed:\n' .. vim.trim(result.stderr or ''), vim.log.levels.ERROR)
+        end
+        run_next()
+      end))
+    end
+
+    run_next()
+  end
+
+  -- Working-tree pickers: <Tab> stages/unstages from the list as well as the search box,
+  -- so <C-a> then <Tab> stages everything in one go.
+  local function worktree_picker(opts)
+    return diff_picker(vim.tbl_deep_extend('force', {
+      actions = { stage_selected = stage_selected },
+      win = {
+        list = { keys = { ['<Tab>'] = 'stage_selected' } },
+        input = { keys = { ['<Tab>'] = { 'stage_selected', mode = { 'n', 'i' } } } }
+      }
+    }, opts))
+  end
+
+  vim.keymap.set('n', '<leader>vg', function() Snacks.picker.git_status(worktree_picker({})) end, { desc = 'Changed files (Tab stages, C-a Tab stages all)' })
+  vim.keymap.set('n', '<leader>vd', function() Snacks.picker.git_diff(worktree_picker({})) end,   { desc = 'All hunks (Tab stages)' })
 end
 
 function M.setup()
