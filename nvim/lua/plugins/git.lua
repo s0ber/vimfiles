@@ -300,6 +300,8 @@ function M.setup()
   vim.keymap.set('n', '<leader>vq', close_review,                                     { desc = 'Close review' })
 
   -- Diff pickers fill the screen: a narrow list on the left, the diff preview gets the rest.
+  -- They open with the *list* focused, in normal mode - these are for walking, not typing.
+  -- "/" or "i" jumps into the search box when a filter is wanted after all.
   local diff_layout = {
     fullscreen = true,
     layout = {
@@ -316,6 +318,19 @@ function M.setup()
     }
   }
 
+  -- "o" hops between the list and the diff: into the preview to scroll/search it with
+  -- normal vim keys, back out again with the same key.
+  local function diff_picker(opts)
+    return vim.tbl_deep_extend('force', {
+      layout = diff_layout,
+      focus = 'list',
+      win = {
+        list = { keys = { ['o'] = 'focus_preview' } },
+        preview = { keys = { ['o'] = 'focus_list' } }
+      }
+    }, opts)
+  end
+
   -- Commit pickers. Enter drills into the commit: a list of the files it touched, each
   -- previewed with its own diff. <C-o> there goes back to the commits. <C-y> on a commit
   -- opens an inline review against it instead (working tree vs that commit).
@@ -330,27 +345,29 @@ function M.setup()
       parent = '4b825dc642cb6eb9a060e54bf8d69288fbee4904' -- git's empty tree, for a root commit
     end
 
-    Snacks.picker.git_diff({
+    Snacks.picker.git_diff(diff_picker({
       title = 'Files in ' .. commit:sub(1, 8),
       cmd_args = { parent, commit },
       group = true,   -- one row per file, not per hunk
       staged = false, -- otherwise the picker would also list the index
-      layout = diff_layout,
       actions = {
         back = function(picker)
           picker:close()
           back()
         end
       },
-      win = { input = { keys = { ['<C-o>'] = { 'back', mode = { 'n', 'i' } } } } }
-    })
+      win = {
+        list = { keys = { ['<C-o>'] = 'back' } },
+        preview = { keys = { ['<C-o>'] = 'back' } },
+        input = { keys = { ['<C-o>'] = { 'back', mode = { 'n', 'i' } } } }
+      }
+    }))
   end
 
   commit_log = function(opts)
     local reopen = function() commit_log(opts) end
 
-    Snacks.picker.git_log(vim.tbl_extend('force', {
-      layout = diff_layout,
+    Snacks.picker.git_log(vim.tbl_deep_extend('force', diff_picker({
       confirm = function(picker, item)
         picker:close()
         if item and item.commit then commit_files(item.commit, reopen) end
@@ -361,14 +378,18 @@ function M.setup()
           if item and item.commit then open_review(item.commit) end
         end
       },
-      win = { input = { keys = { ['<C-y>'] = { 'review', mode = { 'n', 'i' } } } } }
-    }, opts or {}))
+      win = {
+        -- "o" opens the commit here (the files list), rather than hopping to the preview.
+        list = { keys = { ['o'] = 'confirm', ['<C-y>'] = 'review' } },
+        input = { keys = { ['<C-y>'] = { 'review', mode = { 'n', 'i' } } } }
+      }
+    }), opts or {}))
   end
 
   vim.keymap.set('n', '<leader>vh', function() commit_log() end,                        { desc = 'Repo history' })
   vim.keymap.set('n', '<leader>vf', function() commit_log({ current_file = true }) end, { desc = 'File history' })
-  vim.keymap.set('n', '<leader>vg', function() Snacks.picker.git_status({ layout = diff_layout }) end,                                   { desc = 'Changed files (stage with Tab)' })
-  vim.keymap.set('n', '<leader>vd', function() Snacks.picker.git_diff({ layout = diff_layout }) end,                                     { desc = 'All hunks' })
+  vim.keymap.set('n', '<leader>vg', function() Snacks.picker.git_status(diff_picker({})) end,   { desc = 'Changed files (stage with Tab)' })
+  vim.keymap.set('n', '<leader>vd', function() Snacks.picker.git_diff(diff_picker({})) end,     { desc = 'All hunks' })
 
   vim.keymap.set('n', ']h', navigation.next_hunk,                                     { desc = 'Next hunk' })
   vim.keymap.set('n', '[h', navigation.previous_hunk,                                 { desc = 'Previous hunk' })
