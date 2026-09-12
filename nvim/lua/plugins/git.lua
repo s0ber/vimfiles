@@ -388,10 +388,11 @@ local function setup_pickers(has_unified)
             ['<C-j>'] = 'preview_line_down',
             ['<C-k>'] = 'preview_line_up',
             ['/'] = false, -- snacks makes it jump to the filter box; keep vim's own search instead
-            ['<C-c>'] = 'cancel' -- snacks only binds it in the search box
+            ['<C-c>'] = 'cancel', -- snacks only binds it in the search box
+            ['<C-l>'] = 'focus_preview' -- the diff is to the right...
           }
         },
-        preview = { keys = { ['o'] = 'focus_list', ['u'] = 'focus_list', ['<C-c>'] = 'cancel' } },
+        preview = { keys = { ['o'] = 'focus_list', ['u'] = 'focus_list', ['<C-c>'] = 'cancel', ['<C-h>'] = 'focus_list' } }, -- ...and the list to the left
         -- The same from the search box; "o"/"u" only in normal mode so typing them stays text.
         input = {
           keys = {
