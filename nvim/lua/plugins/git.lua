@@ -23,7 +23,7 @@ local function define_highlights()
   local comment = vim.api.nvim_get_hl(0, { name = 'Comment', link = false })
   vim.api.nvim_set_hl(0, 'UnifiedFolded', { fg = scale(comment.fg or 0x908caa, 0.6), bg = 'NONE', italic = true })
 
-  -- Snacks' "fancy" diff previews (,vg ,vd ,vh ,vf). Its defaults paint *unchanged* context
+  -- Snacks' "fancy" diff previews (,vv ,vd ,vh ,vf). Its defaults paint *unchanged* context
   -- lines with DiffChange - rose-pine's muddy orange - which reads as if everything changed.
   -- Context gets no background, and add/delete reuse the review's colours so the preview
   -- and the inline review look like the same tool. The LineNr variants are the number
@@ -292,7 +292,7 @@ local function setup_unified()
   local navigation = require('unified.navigation')
   local hunks = require('unified.hunk_actions')
 
-  vim.keymap.set('n', '<leader>vv', toggle_review('HEAD'),                            { desc = 'Review working tree' })
+  vim.keymap.set('n', '<leader>vu', toggle_review('HEAD'),                            { desc = 'Review working tree (unified)' })
   vim.keymap.set('n', '<leader>vb', function() open_review(merge_base()) end,         { desc = 'Review branch vs master' })
   vim.keymap.set('n', '<leader>vl', function() open_review('HEAD~1') end,             { desc = 'Review last commit' })
   vim.keymap.set('n', '<leader>vp', function() require('unified').pick_commit() end,  { desc = 'Review against a picked commit' })
@@ -601,19 +601,86 @@ local function setup_pickers(has_unified)
     run_next()
   end
 
+  -- Commit what is staged. Opens git's own COMMIT_EDITMSG in a split as a gitcommit
+  -- buffer (syntax, spelling, the usual "# Changes to be committed" template); writing it
+  -- runs the commit and closes the split, quitting without writing abandons it.
+  -- With amend, the last commit's message is pre-filled and staging nothing is fine -
+  -- that is how you reword a commit.
+  local function commit_staged(opts)
+    local amend = opts and opts.amend
+    vim.fn.system({ 'git', 'diff', '--cached', '--quiet' })
+
+    if vim.v.shell_error == 0 and not amend then
+      vim.notify('Nothing staged to commit', vim.log.levels.WARN)
+      return
+    end
+
+    local path = vim.fn.fnamemodify(vim.fn.systemlist({ 'git', 'rev-parse', '--git-path', 'COMMIT_EDITMSG' })[1], ':p')
+    local template = amend and vim.fn.systemlist({ 'git', 'log', '-1', '--format=%B' }) or { '' }
+    local what = amend and 'amend the last commit' or 'commit'
+    vim.list_extend(template, { '# Lines starting with "#" are ignored. Write the buffer to ' .. what .. ', :q! to abandon.', '#' })
+    for _, line in ipairs(vim.fn.systemlist({ 'git', '-c', 'color.ui=never', 'status' })) do
+      template[#template + 1] = '# ' .. line
+    end
+    vim.fn.writefile(template, path)
+
+    vim.cmd('botright split ' .. vim.fn.fnameescape(path))
+    vim.bo.filetype = 'gitcommit'
+    vim.bo.bufhidden = 'wipe'
+    vim.wo.spell = true
+    vim.api.nvim_win_set_cursor(0, { 1, 0 })
+
+    vim.api.nvim_create_autocmd('BufWritePost', {
+      buffer = 0,
+      once = true,
+      callback = function(event)
+        local cmd = { 'git', 'commit', '--cleanup=strip', '-F', path }
+        if amend then table.insert(cmd, '--amend') end
+        local result = vim.system(cmd):wait()
+
+        if result.code ~= 0 then
+          vim.notify('Commit failed:\n' .. vim.trim(result.stderr .. result.stdout), vim.log.levels.ERROR)
+          return
+        end
+
+        vim.notify(vim.trim(result.stdout), vim.log.levels.INFO)
+        vim.api.nvim_buf_delete(event.buf, { force = true })
+      end
+    })
+  end
+
   -- Working-tree pickers: <Tab> stages/unstages from the list as well as the search box,
-  -- so <C-a> then <Tab> stages everything in one go.
+  -- so <C-a> then <Tab> stages everything in one go. "c" commits what is staged.
   local function worktree_picker(opts)
     return diff_picker(vim.tbl_deep_extend('force', {
-      actions = { stage_selected = stage_selected },
+      actions = {
+        stage_selected = stage_selected,
+        commit = function(picker)
+          picker:close()
+          commit_staged()
+        end,
+        amend = function(picker)
+          picker:close()
+          commit_staged({ amend = true })
+        end
+      },
       win = {
-        list = { keys = { ['<Tab>'] = 'stage_selected' } },
-        input = { keys = { ['<Tab>'] = { 'stage_selected', mode = { 'n', 'i' } } } }
+        list = { keys = { ['<Tab>'] = 'stage_selected', ['c'] = 'commit', ['C'] = 'amend' } },
+        input = {
+          keys = {
+            ['<Tab>'] = { 'stage_selected', mode = { 'n', 'i' } },
+            ['c'] = { 'commit', mode = 'n' },
+            ['C'] = { 'amend', mode = 'n' }
+          }
+        }
       }
     }, opts))
   end
 
-  vim.keymap.set('n', '<leader>vg', function() Snacks.picker.git_status(worktree_picker({})) end, { desc = 'Changed files (Tab stages, C-a Tab stages all)' })
+  vim.keymap.set('n', '<leader>vc', function() commit_staged() end,                 { desc = 'Commit staged changes' })
+  vim.keymap.set('n', '<leader>vC', function() commit_staged({ amend = true }) end, { desc = 'Amend the last commit' })
+
+  vim.keymap.set('n', '<leader>vv', function() Snacks.picker.git_status(worktree_picker({})) end, { desc = 'Changed files (Tab stages, C-a Tab stages all)' })
   vim.keymap.set('n', '<leader>vd', function() Snacks.picker.git_diff(worktree_picker({})) end,   { desc = 'All hunks (Tab stages)' })
 end
 
