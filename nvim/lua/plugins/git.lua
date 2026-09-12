@@ -318,15 +318,17 @@ function M.setup()
     }
   }
 
-  -- "o" hops between the list and the diff: into the preview to scroll/search it with
-  -- normal vim keys, back out again with the same key.
+  -- "o" goes one level in, "u" one level up: list -> diff (a normal buffer to scroll and
+  -- search) -> back to the list. The commit pickers extend this a level further.
   local function diff_picker(opts)
     return vim.tbl_deep_extend('force', {
       layout = diff_layout,
       focus = 'list',
       win = {
         list = { keys = { ['o'] = 'focus_preview' } },
-        preview = { keys = { ['o'] = 'focus_list' } }
+        preview = { keys = { ['o'] = 'focus_list', ['u'] = 'focus_list' } },
+        -- The same from the search box, but only in normal mode - typed "o"/"u" stay text.
+        input = { keys = { ['o'] = { 'focus_preview', mode = 'n' } } }
       }
     }, opts)
   end
@@ -357,9 +359,9 @@ function M.setup()
         end
       },
       win = {
-        list = { keys = { ['<C-o>'] = 'back' } },
+        list = { keys = { ['u'] = 'back', ['<C-o>'] = 'back' } },
         preview = { keys = { ['<C-o>'] = 'back' } },
-        input = { keys = { ['<C-o>'] = { 'back', mode = { 'n', 'i' } } } }
+        input = { keys = { ['u'] = { 'back', mode = 'n' }, ['<C-o>'] = { 'back', mode = { 'n', 'i' } } } }
       }
     }))
   end
@@ -381,7 +383,7 @@ function M.setup()
       win = {
         -- "o" opens the commit here (the files list), rather than hopping to the preview.
         list = { keys = { ['o'] = 'confirm', ['<C-y>'] = 'review' } },
-        input = { keys = { ['<C-y>'] = { 'review', mode = { 'n', 'i' } } } }
+        input = { keys = { ['o'] = { 'confirm', mode = 'n' }, ['<C-y>'] = { 'review', mode = { 'n', 'i' } } } }
       }
     }), opts or {}))
   end
