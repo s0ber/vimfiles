@@ -502,7 +502,16 @@ local function setup_pickers(has_unified)
   -- failing the rest. Files go in a single git call; hunks (which need "git apply")
   -- run one after another.
   local function stage_selected(picker)
-    local items = picker:selected({ fallback = true })
+    -- picker:selected() hands out deep copies; the rows themselves are needed so their
+    -- status can be rewritten in place afterwards.
+    local items = {}
+    for _, item in ipairs(picker.list.selected) do
+      items[#items + 1] = picker:resolve(item)
+    end
+    if #items == 0 then
+      items = { picker:current() }
+    end
+
     local files, hunks = {}, {}
 
     for _, item in ipairs(items) do
@@ -519,13 +528,13 @@ local function setup_pickers(has_unified)
 
     local queue = {}
 
-    if #files > 0 then
-      -- Toggle the group: unstage only when every selected file is already fully staged.
-      local all_staged = true
-      for _, file in ipairs(files) do
-        if file.status:sub(2) ~= ' ' then all_staged = false end
-      end
+    -- Toggle the group: unstage only when every selected file is already fully staged.
+    local all_staged = #files > 0
+    for _, file in ipairs(files) do
+      if file.status:sub(2) ~= ' ' then all_staged = false end
+    end
 
+    if #files > 0 then
       local cmd = all_staged and { 'git', 'restore', '--staged', '--' } or { 'git', 'add', '--' }
       for _, file in ipairs(files) do table.insert(cmd, file.file) end
       table.insert(queue, { cmd = cmd })
@@ -539,17 +548,50 @@ local function setup_pickers(has_unified)
     end
 
     local cwd = items[1].cwd or vim.fn.getcwd()
+    local failed = false
+
+    -- Re-running the finder (picker:refresh) empties the list and refills it a frame
+    -- later, which reads as a flicker. Instead, once git has succeeded, rewrite what the
+    -- rows already know and re-render them where they are.
+    local function apply_locally()
+      -- Porcelain status is two columns: index, then worktree.
+      for _, file in ipairs(files) do
+        local index, worktree = file.status:sub(1, 1), file.status:sub(2, 2)
+
+        if all_staged then
+          -- restore --staged: the index change goes back to the worktree; a new file becomes untracked.
+          file.status = index == 'A' and '??' or (' ' .. (worktree ~= ' ' and worktree or index))
+        else
+          -- add: the worktree change becomes the index change; untracked becomes added.
+          local staged_as = (index ~= ' ' and index ~= '?') and index or (worktree == '?' and 'A' or worktree)
+          file.status = staged_as .. ' '
+        end
+      end
+
+      for _, hunk in ipairs(hunks) do
+        hunk.staged = not hunk.staged
+      end
+
+      picker.list:set_selected()
+      picker.list:update({ force = true })
+      picker:show_preview()
+    end
 
     local function run_next()
       local job = table.remove(queue, 1)
 
       if not job then
-        picker:refresh()
+        if failed then
+          picker:refresh() -- something did not apply; resync with reality
+        else
+          apply_locally()
+        end
         return
       end
 
       vim.system(job.cmd, { cwd = cwd, stdin = job.input }, vim.schedule_wrap(function(result)
         if result.code ~= 0 then
+          failed = true
           vim.notify(table.concat(job.cmd, ' ') .. ' failed:\n' .. vim.trim(result.stderr or ''), vim.log.levels.ERROR)
         end
         run_next()
