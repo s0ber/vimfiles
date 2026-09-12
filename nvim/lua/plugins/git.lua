@@ -620,17 +620,31 @@ local function setup_pickers(has_unified)
   -- that is how you reword a commit.
   local function commit_staged(opts)
     local amend = opts and opts.amend
+    local staged_everything = false
     vim.fn.system({ 'git', 'diff', '--cached', '--quiet' })
 
-    if vim.v.shell_error == 0 and not amend then
-      vim.notify('Nothing staged to commit', vim.log.levels.WARN)
-      return
+    -- Nothing staged: take that as "commit everything", the way a desktop client does -
+    -- stage every change, untracked files included, and carry on. With a clean tree a
+    -- plain commit has nothing to do, while an amend still makes sense: it is a reword.
+    if vim.v.shell_error == 0 then
+      vim.fn.system({ 'git', 'add', '--all' })
+      vim.fn.system({ 'git', 'diff', '--cached', '--quiet' })
+
+      if vim.v.shell_error ~= 0 then
+        staged_everything = true
+      elseif not amend then
+        vim.notify('Nothing to commit, working tree clean', vim.log.levels.WARN)
+        return
+      end
     end
 
     local path = vim.fn.fnamemodify(vim.fn.systemlist({ 'git', 'rev-parse', '--git-path', 'COMMIT_EDITMSG' })[1], ':p')
     local template = amend and vim.fn.systemlist({ 'git', 'log', '-1', '--format=%B' }) or { '' }
     local what = amend and 'amend the last commit' or 'commit'
     vim.list_extend(template, { '# Lines starting with "#" are ignored. Write the buffer to ' .. what .. ', :q! to abandon.', '#' })
+    if staged_everything then
+      vim.list_extend(template, { '# Nothing was staged, so every change (new files included) has been staged for this commit.', '#' })
+    end
     for _, line in ipairs(vim.fn.systemlist({ 'git', '-c', 'color.ui=never', 'status' })) do
       template[#template + 1] = '# ' .. line
     end
@@ -660,6 +674,13 @@ local function setup_pickers(has_unified)
     vim.bo.bufhidden = 'wipe'
     vim.wo.spell = true
     vim.api.nvim_win_set_cursor(0, { 1, 0 })
+
+    -- An amend arrives with its message already in place, so nothing needs typing - but
+    -- ":x" only writes a modified buffer, and unwritten means not amended. Start it
+    -- modified so ":x" commits; abandoning becomes ":q!", which is the honest signal.
+    if amend then
+      vim.bo.modified = true
+    end
 
     -- However the split goes away - committed, :q, :q!, :x on an untouched message -
     -- go back where we came from rather than wherever nvim's "previous window" points.
