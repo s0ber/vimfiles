@@ -205,10 +205,9 @@ local function toggle_review(ref)
   end
 end
 
-function M.setup()
-  define_highlights()
-  vim.api.nvim_create_autocmd('ColorScheme', { callback = define_highlights, desc = 'Unified diff colours' })
-
+-- Everything built on unified.nvim: the inline review, its file list, folding, hunk keys.
+-- Only wired up while the plugin is on the runtimepath (its NeoBundle line in .vimrc).
+local function setup_unified()
   require('unified').setup({
     highlights = { add = 'UnifiedAdd', delete = 'UnifiedDelete', change = 'UnifiedChange' },
     line_symbols = { add = '+', delete = '-', change = '~' },
@@ -299,6 +298,47 @@ function M.setup()
   vim.keymap.set('n', '<leader>vp', function() require('unified').pick_commit() end,  { desc = 'Review against a picked commit' })
   vim.keymap.set('n', '<leader>vq', close_review,                                     { desc = 'Close review' })
 
+  vim.keymap.set('n', ']h', navigation.next_hunk,                                     { desc = 'Next hunk' })
+  vim.keymap.set('n', '[h', navigation.previous_hunk,                                 { desc = 'Previous hunk' })
+
+  -- The same on <C-]> / <C-t>, vim's tag-jump pair. In any buffer that is not showing a
+  -- review diff the keys do whatever they did before: an existing mapping (.vimrc has
+  -- <C-]> on coc-diagnostic-next) is replayed, otherwise vim's own behaviour. (<C-[> is
+  -- not an option: in a terminal it is indistinguishable from <Esc>.)
+  local function in_review_or(key, move)
+    local previous = vim.fn.maparg(key, 'n', false, true)
+    local default = vim.api.nvim_replace_termcodes(key, true, false, true)
+
+    return function()
+      if require('unified.state').is_active() and #require('unified.hunk_store').get(0) > 0 then
+        move()
+      elseif previous.callback then
+        previous.callback()
+      elseif previous.rhs and previous.rhs ~= '' then
+        local rhs = vim.api.nvim_replace_termcodes(previous.rhs, true, false, true)
+        vim.api.nvim_feedkeys(rhs, previous.noremap == 1 and 'n' or 'm', false)
+      else
+        vim.api.nvim_feedkeys(default, 'n', false)
+      end
+    end
+  end
+
+  vim.keymap.set('n', '<C-]>', in_review_or('<C-]>', navigation.next_hunk),     { desc = 'Next hunk (tag jump elsewhere)' })
+  vim.keymap.set('n', '<C-t>', in_review_or('<C-t>', navigation.previous_hunk), { desc = 'Previous hunk (tag pop elsewhere)' })
+  local function refolding(action)
+    return function()
+      action()
+      vim.defer_fn(function() fold_unchanged(require('unified.state').main_win) end, 100)
+    end
+  end
+
+  vim.keymap.set('n', '<leader>vs', refolding(hunks.stage_hunk),                      { desc = 'Stage hunk' })
+  vim.keymap.set('n', '<leader>vS', refolding(hunks.unstage_hunk),                    { desc = 'Unstage hunk' })
+  vim.keymap.set('n', '<leader>vr', refolding(hunks.revert_hunk),                     { desc = 'Revert hunk (discards the change)' })
+end
+
+-- The snacks git pickers: history, a commit's files, changed files, hunks.
+local function setup_pickers(has_unified)
   -- Diff pickers fill the screen: a narrow list on the left, the diff preview gets the rest.
   -- They open with the *list* focused, in normal mode - these are for walking, not typing.
   -- "/" or "i" jumps into the search box when a filter is wanted after all.
@@ -448,8 +488,8 @@ function M.setup()
       },
       win = {
         -- "o" opens the commit here (the files list), rather than hopping to the preview.
-        list = { keys = { ['o'] = 'confirm', ['<C-y>'] = 'review' } },
-        input = { keys = { ['o'] = { 'confirm', mode = 'n' }, ['<C-y>'] = { 'review', mode = { 'n', 'i' } } } }
+        list = { keys = { ['o'] = 'confirm', ['<C-y>'] = has_unified and 'review' or nil } },
+        input = { keys = { ['o'] = { 'confirm', mode = 'n' }, ['<C-y>'] = has_unified and { 'review', mode = { 'n', 'i' } } or nil } }
       }
     }), opts or {}))
   end
@@ -458,37 +498,19 @@ function M.setup()
   vim.keymap.set('n', '<leader>vf', function() commit_log({ current_file = true }) end, { desc = 'File history' })
   vim.keymap.set('n', '<leader>vg', function() Snacks.picker.git_status(diff_picker({})) end,   { desc = 'Changed files (stage with Tab)' })
   vim.keymap.set('n', '<leader>vd', function() Snacks.picker.git_diff(diff_picker({})) end,     { desc = 'All hunks' })
+end
 
-  vim.keymap.set('n', ']h', navigation.next_hunk,                                     { desc = 'Next hunk' })
-  vim.keymap.set('n', '[h', navigation.previous_hunk,                                 { desc = 'Previous hunk' })
+function M.setup()
+  define_highlights()
+  vim.api.nvim_create_autocmd('ColorScheme', { callback = define_highlights, desc = 'Unified diff colours' })
 
-  -- The same on <C-]> / <C-t>, vim's tag-jump pair. In any buffer that is not showing a
-  -- review diff the keys keep their normal meaning (<C-[> is not an option: in a
-  -- terminal it is indistinguishable from <Esc>).
-  local function in_review_or(key, move)
-    local default = vim.api.nvim_replace_termcodes(key, true, false, true)
+  local has_unified = pcall(require, 'unified')
 
-    return function()
-      if require('unified.state').is_active() and #require('unified.hunk_store').get(0) > 0 then
-        move()
-      else
-        vim.api.nvim_feedkeys(default, 'n', false)
-      end
-    end
+  if has_unified then
+    setup_unified()
   end
 
-  vim.keymap.set('n', '<C-]>', in_review_or('<C-]>', navigation.next_hunk),     { desc = 'Next hunk (tag jump elsewhere)' })
-  vim.keymap.set('n', '<C-t>', in_review_or('<C-t>', navigation.previous_hunk), { desc = 'Previous hunk (tag pop elsewhere)' })
-  local function refolding(action)
-    return function()
-      action()
-      vim.defer_fn(function() fold_unchanged(require('unified.state').main_win) end, 100)
-    end
-  end
-
-  vim.keymap.set('n', '<leader>vs', refolding(hunks.stage_hunk),                      { desc = 'Stage hunk' })
-  vim.keymap.set('n', '<leader>vS', refolding(hunks.unstage_hunk),                    { desc = 'Unstage hunk' })
-  vim.keymap.set('n', '<leader>vr', refolding(hunks.revert_hunk),                     { desc = 'Revert hunk (discards the change)' })
+  setup_pickers(has_unified)
 end
 
 return M

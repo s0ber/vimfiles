@@ -60,7 +60,7 @@ NeoBundle 'folke/snacks.nvim'
 NeoBundle 'NickvanDyke/opencode.nvim', 'main'
 
 " git
-NeoBundle 'axkirillov/unified.nvim'         " inline unified diffs, right in the buffer
+" NeoBundle 'axkirillov/unified.nvim'         " inline unified diffs - parked, snacks covers it; uncomment to bring the review back
 
 NeoBundle 'RRethy/nvim-treesitter-endwise' " automatically end code blocks
 
