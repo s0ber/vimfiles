@@ -409,7 +409,17 @@ function M.setup()
       win = {
         list = { keys = { ['u'] = 'back', ['<C-o>'] = 'back' } },
         preview = { keys = { ['<C-o>'] = 'back' } },
-        input = { keys = { ['u'] = { 'back', mode = 'n' }, ['<C-o>'] = { 'back', mode = { 'n', 'i' } } } }
+        input = {
+          keys = {
+            ['u'] = { 'back', mode = 'n' },
+            ['<C-o>'] = { 'back', mode = { 'n', 'i' } },
+            -- The git_diff source binds these to stage/restore, which only make sense for
+            -- working-tree changes; here a row is a past commit's patch. Plain multi-select
+            -- instead, and no restore at all.
+            ['<Tab>'] = { 'select_and_next', mode = { 'n', 'i' } },
+            ['<c-r>'] = false
+          }
+        }
       }
     }))
   end
