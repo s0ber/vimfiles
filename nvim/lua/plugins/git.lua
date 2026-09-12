@@ -624,6 +624,25 @@ local function setup_pickers(has_unified)
     end
     vim.fn.writefile(template, path)
 
+    -- Where to land once the split closes: back where the commit was started from, or
+    -- failing that the first ordinary window - never the file tree.
+    local origin = vim.api.nvim_get_current_win()
+
+    local function return_to_origin()
+      if vim.api.nvim_win_is_valid(origin) and vim.bo[vim.api.nvim_win_get_buf(origin)].filetype ~= 'NvimTree' then
+        vim.api.nvim_set_current_win(origin)
+        return
+      end
+
+      for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+        local ft = vim.bo[vim.api.nvim_win_get_buf(win)].filetype
+        if ft ~= 'NvimTree' and vim.api.nvim_win_get_config(win).relative == '' then
+          vim.api.nvim_set_current_win(win)
+          return
+        end
+      end
+    end
+
     vim.cmd('botright split ' .. vim.fn.fnameescape(path))
     vim.bo.filetype = 'gitcommit'
     vim.bo.bufhidden = 'wipe'
@@ -646,6 +665,7 @@ local function setup_pickers(has_unified)
         -- One line, after clearing the ":w" message - a second line would trigger
         -- vim's "Press ENTER" prompt.
         vim.api.nvim_buf_delete(event.buf, { force = true })
+        return_to_origin()
         vim.cmd('redraw')
         local lines = vim.split(vim.trim(result.stdout), '\n')
         vim.notify(lines[1] .. (lines[2] and ('  (' .. vim.trim(lines[2]) .. ')') or ''), vim.log.levels.INFO)
