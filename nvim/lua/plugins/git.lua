@@ -35,6 +35,9 @@ local function define_highlights()
   vim.api.nvim_set_hl(0, 'SnacksDiffDelete',        { link = 'UnifiedDelete' })
   vim.api.nvim_set_hl(0, 'SnacksDiffAddLineNr',     { fg = line_nr, bg = scale(accent.add,    0.32) })
   vim.api.nvim_set_hl(0, 'SnacksDiffDeleteLineNr',  { fg = line_nr, bg = scale(accent.delete, 0.36) })
+  -- The words that actually changed within a changed line - a clearly stronger tint.
+  vim.api.nvim_set_hl(0, 'SnacksDiffAddWord',       { bg = scale(accent.add,    0.48) })
+  vim.api.nvim_set_hl(0, 'SnacksDiffDeleteWord',    { bg = scale(accent.delete, 0.55) })
 end
 
 -- The commit this branch actually forked from, however far master has moved since.
@@ -337,8 +340,187 @@ local function setup_unified()
   vim.keymap.set('n', '<leader>vr', refolding(hunks.revert_hunk),                     { desc = 'Revert hunk (discards the change)' })
 end
 
+-- ----------------------------------------------------------------------------------
+-- Word-level emphasis inside snacks' fancy diff, the way GitHub does it: each run of
+-- removed lines is paired line-by-line with the run of added lines that follows it,
+-- the pair is split into tokens, and the tokens outside their longest common
+-- subsequence get a stronger tint. Pairs that share too little are left alone.
+-- ----------------------------------------------------------------------------------
+
+-- Words, runs of whitespace, or single other characters, with their byte range.
+local function tokenize(text)
+  local tokens = {}
+  local i = 1
+
+  while i <= #text do
+    local from, to = text:find('^[%w_]+', i)
+    if not from then from, to = text:find('^%s+', i) end
+    if not from then from, to = i, i end
+    tokens[#tokens + 1] = { text = text:sub(from, to), from = from, to = to, space = text:sub(from, from):match('%s') ~= nil }
+    i = to + 1
+  end
+
+  return tokens
+end
+
+-- Marks the tokens on each side that are part of the longest common subsequence.
+local function mark_common(old, new)
+  local n, m = #old, #new
+  local dp = {}
+  for i = 1, n + 1 do
+    dp[i] = {}
+    for j = 1, m + 1 do dp[i][j] = 0 end
+  end
+
+  for i = n, 1, -1 do
+    for j = m, 1, -1 do
+      if old[i].text == new[j].text then
+        dp[i][j] = dp[i + 1][j + 1] + 1
+      else
+        dp[i][j] = math.max(dp[i + 1][j], dp[i][j + 1])
+      end
+    end
+  end
+
+  local i, j = 1, 1
+  while i <= n and j <= m do
+    if old[i].text == new[j].text then
+      old[i].kept, new[j].kept = true, true
+      i, j = i + 1, j + 1
+    elseif dp[i + 1][j] >= dp[i][j + 1] then
+      i = i + 1
+    else
+      j = j + 1
+    end
+  end
+end
+
+-- Byte ranges of the changed tokens, merged; whitespace between two changed tokens
+-- counts as changed too, so "a b" reads as one span rather than two islands.
+local function changed_ranges(tokens)
+  for k, token in ipairs(tokens) do
+    if token.kept and token.space and tokens[k - 1] and tokens[k + 1]
+      and not tokens[k - 1].kept and not tokens[k + 1].kept then
+      token.kept = false
+    end
+  end
+
+  local ranges = {}
+  for _, token in ipairs(tokens) do
+    if not token.kept then
+      local last = ranges[#ranges]
+      if last and last.to == token.from - 1 then
+        last.to = token.to
+      else
+        ranges[#ranges + 1] = { from = token.from, to = token.to }
+      end
+    end
+  end
+  return ranges
+end
+
+-- Ranges to emphasise on each side of a removed/added pair, or nil when the two lines
+-- have too little in common for the emphasis to mean anything.
+local function word_diff(old_text, new_text)
+  if #old_text > 2000 or #new_text > 2000 then
+    return nil
+  end
+
+  local old, new = tokenize(old_text), tokenize(new_text)
+  if #old > 300 or #new > 300 then
+    return nil
+  end
+
+  mark_common(old, new)
+
+  local kept_chars, kept_words = 0, 0
+  for _, token in ipairs(old) do
+    if token.kept then
+      kept_chars = kept_chars + #token.text
+      if not token.space then kept_words = kept_words + 1 end
+    end
+  end
+
+  if kept_words == 0 or kept_chars / math.max(#old_text, #new_text) < 0.4 then
+    return nil
+  end
+
+  return changed_ranges(old), changed_ranges(new)
+end
+
+local function emphasise_changed_words()
+  local diff = require('snacks.picker.util.diff')
+  local format_hunk = diff.format_hunk
+
+  diff.format_hunk = function(ctx)
+    local lines = format_hunk(ctx)
+    local ok = pcall(function()
+      local parse = diff.parse_hunk(ctx)
+      if parse.unmerged or (ctx.opts.annotations and #ctx.opts.annotations > 0) then
+        return
+      end
+
+      local index = diff.build_hunk_index(parse)
+      local header = ctx.opts.hunk_header ~= false and #diff.format_hunk_header(parse) or 0
+      local last = #parse.versions
+
+      -- The code sits at the end of the line, after the indent that stands in for the
+      -- number/prefix columns (and an empty metadata chunk), so its byte offset is the
+      -- line's total text length minus the code itself.
+      local function add_ranges(l, ranges, group)
+        local line = lines[header + l]
+        if not line then return end
+        local total = 0
+        for _, chunk in ipairs(line) do
+          if type(chunk[1]) == 'string' and not chunk.virtual and not chunk.inline then
+            total = total + #chunk[1]
+          end
+        end
+        local indent = total - #parse.lines[l]
+        for _, range in ipairs(ranges) do
+          -- Snacks paints its own marks at 4096, and on code tokens those already carry
+          -- the line background; the word tint has to sit above them to be seen.
+          line[#line + 1] = { col = indent + range.from - 1, end_col = indent + range.to, hl_group = group, priority = 5000 }
+        end
+      end
+
+      local l = 1
+      while l <= parse.len do
+        local function removed(k) return index[k] and index[k][1] ~= nil and index[k][last] == nil end
+        local function added(k) return index[k] and index[k][last] ~= nil and index[k][1] == nil end
+
+        if removed(l) then
+          local removed_from = l
+          while removed(l) do l = l + 1 end
+          local added_from = l
+          while added(l) do l = l + 1 end
+
+          local pairs_count = math.min(added_from - removed_from, l - added_from)
+          for k = 0, pairs_count - 1 do
+            local old_line, new_line = removed_from + k, added_from + k
+            local old_ranges, new_ranges = word_diff(parse.lines[old_line], parse.lines[new_line])
+            if old_ranges then
+              add_ranges(old_line, old_ranges, 'SnacksDiffDeleteWord')
+              add_ranges(new_line, new_ranges, 'SnacksDiffAddWord')
+            end
+          end
+        else
+          l = l + 1
+        end
+      end
+    end)
+    if not ok then
+      -- Never let a highlighting nicety break the preview.
+      return format_hunk(ctx)
+    end
+    return lines
+  end
+end
+
 -- The snacks git pickers: history, a commit's files, changed files, hunks.
 local function setup_pickers(has_unified)
+  emphasise_changed_words()
+
   -- Diff pickers fill the screen: a narrow list on the left, the diff preview gets the rest.
   -- They open with the *list* focused, in normal mode - these are for walking, not typing.
   -- "/" or "i" jumps into the search box when a filter is wanted after all.
