@@ -517,9 +517,53 @@ local function emphasise_changed_words()
   end
 end
 
+-- Snacks' fancy commit header only understands a bare "commit <hash>" line; with
+-- decorations on it, it would print the raw line. Strip them off before the original
+-- runs, then add a "Refs" line: branches, remotes and tags this commit is the tip of.
+local function show_commit_refs()
+  local diff = require('snacks.picker.util.diff')
+  local format_header = diff.format_header
+
+  diff.format_header = function(ctx)
+    local refs
+    for i, line in ipairs(ctx.diff.header or {}) do
+      local hash, decoration = line:match('^commit%s+(%S+)%s+%((.+)%)%s*$')
+      if hash then
+        ctx.diff.header[i] = 'commit ' .. hash
+        refs = vim.split(decoration, ', ', { plain = true })
+      end
+    end
+
+    local lines = format_header(ctx)
+    if not refs or #lines == 0 then
+      return lines
+    end
+
+    local row = { { 'Refs', 'SnacksDiffLabel' }, { ': ', 'SnacksPickerDelim' } }
+    for k, ref in ipairs(refs) do
+      if k > 1 then row[#row + 1] = { ', ', 'SnacksPickerDelim' } end
+      local head, target = ref:match('^(HEAD) %-> (.+)$')
+      local tag = ref:match('^tag: (.+)$')
+      if head then
+        row[#row + 1] = { head, 'SnacksPickerGitCommit' }
+        row[#row + 1] = { ' -> ', 'SnacksPickerDelim' }
+        row[#row + 1] = { target, 'SnacksPickerGitBranch' }
+      elseif tag then
+        row[#row + 1] = { '\u{f02b} ' .. tag, 'SnacksPickerGitScope' } -- a tag icon, in the "scope" colour
+      else
+        row[#row + 1] = { ref, 'SnacksPickerGitBranch' }
+      end
+    end
+
+    table.insert(lines, 2, row) -- right under "Commit:"
+    return lines
+  end
+end
+
 -- The snacks git pickers: history, a commit's files, changed files, hunks.
 local function setup_pickers(has_unified)
   emphasise_changed_words()
+  show_commit_refs()
 
   -- Diff pickers fill the screen: a narrow list on the left, the diff preview gets the rest.
   -- They open with the *list* focused, in normal mode - these are for walking, not typing.
@@ -559,6 +603,9 @@ local function setup_pickers(has_unified)
     return vim.tbl_deep_extend('force', {
       layout = diff_layout,
       focus = 'list',
+      -- Through a pipe git never decorates, so the commit preview would never learn about
+      -- branches or tags; force it. Rendered by the header hook below.
+      previewers = { git = { args = { '-c', 'log.decorate=short' } } },
       actions = {
         preview_line_down = preview_line('<C-e>'),
         preview_line_up = preview_line('<C-y>')
