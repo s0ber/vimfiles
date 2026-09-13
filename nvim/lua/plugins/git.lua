@@ -909,6 +909,8 @@ local function setup_pickers(has_unified)
     -- modified so ":x" commits; abandoning becomes ":q!", which is the honest signal.
     if amend then
       vim.bo.modified = true
+    else
+      vim.schedule(function() vim.cmd('startinsert') end) -- the subject line is empty: start typing straight away
     end
 
     -- However the split goes away - committed, :q, :q!, :x on an untouched message -
