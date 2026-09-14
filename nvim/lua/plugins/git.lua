@@ -1058,7 +1058,31 @@ local function setup_pickers(has_unified)
   vim.keymap.set('n', '<leader>vc', function() commit_staged() end,                 { desc = 'Commit staged changes' })
   vim.keymap.set('n', '<leader>vC', function() commit_staged({ amend = true }) end, { desc = 'Amend the last commit' })
 
-  vim.keymap.set('n', '<leader>vv', function() Snacks.picker.git_status(worktree_picker({})) end, { desc = 'Changed files (Tab stages, C-a Tab stages all)' })
+  -- What the preview shows for a changed file. Snacks' own rule is "staged files show
+  -- the staged diff", which for a file staged and then edited again (MM) means the
+  -- preview is frozen at the moment of staging and never shows the newer edits. The
+  -- workflow here is "look at everything, then pick what to commit", so a tracked file
+  -- with working-tree changes always previews its full change since HEAD. New and
+  -- untracked files keep snacks' file preview.
+  local function full_change_preview(ctx)
+    local status = ctx.item.status or ''
+    if status:find('^[A?]') or status:sub(2, 2) == ' ' then
+      return Snacks.picker.preview.git_status(ctx)
+    end
+    Snacks.picker.preview.cmd({ 'git', '-c', 'core.quotepath=false', '--no-pager', 'diff', 'HEAD', '--', ctx.item.file }, ctx, { ft = 'diff' })
+  end
+
+  -- ,vv is where a commit is assembled from scratch, so it opens with nothing staged:
+  -- a mixed reset, which only touches the index and never the working tree.
+  local function changed_files()
+    vim.fn.system({ 'git', 'diff', '--cached', '--quiet' })
+    if vim.v.shell_error ~= 0 then
+      vim.fn.system({ 'git', 'reset', '-q' })
+    end
+    Snacks.picker.git_status(worktree_picker({ preview = full_change_preview }))
+  end
+
+  vim.keymap.set('n', '<leader>vv', changed_files, { desc = 'Changed files, unstaged (Tab stages, C-a Tab stages all)' })
   vim.keymap.set('n', '<leader>vd', function() Snacks.picker.git_diff(worktree_picker({})) end,   { desc = 'All hunks (Tab stages)' })
 end
 
