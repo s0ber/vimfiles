@@ -1,0 +1,7 @@
+backup taken: Sun Sep 13 15:08:51 +03 2026
+nvim: NVIM v0.11.1
+nvim-treesitter: 066fd6505377e3fd4aa219e61ce94c2b8bdb0b79 (branch master)
+nvim-treesitter-endwise: d6cbb83307d516ec076d17c9a33d704ef626ee8c
+parsers: css.so html.so javascript.so json.so lua.so query.so regex.so ruby.so scss.so slim.so tsx.so typescript.so vim.so 
+
+restore: rm -rf ~/.vim/bundle/nvim-treesitter ~/.vim/bundle/nvim-treesitter-endwise && cp -R /Users/s0ber/.vim/bundle-backups/treesitter-2026-09-13/nvim-treesitter /Users/s0ber/.vim/bundle-backups/treesitter-2026-09-13/nvim-treesitter-endwise ~/.vim/bundle/ && cp /Users/s0ber/.vim/bundle-backups/treesitter-2026-09-13/config/nvim-treesitter.lua ~/.config/nvim/lua/plugins/ && cp -R /Users/s0ber/.vim/bundle-backups/treesitter-2026-09-13/config/queries ~/.config/nvim/
