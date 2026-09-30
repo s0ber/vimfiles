@@ -40,6 +40,27 @@ local function define_highlights()
   vim.api.nvim_set_hl(0, 'SnacksDiffDeleteWord',    { bg = scale(accent.delete, 0.55) })
 end
 
+-- A window fit to open a file in: the preferred one when it still qualifies, otherwise
+-- the first ordinary window in the tab. Never the file tree, never a floating window.
+local function usable_window(preferred)
+  local function suitable(win)
+    return win
+      and vim.api.nvim_win_is_valid(win)
+      and vim.api.nvim_win_get_config(win).relative == ''
+      and vim.bo[vim.api.nvim_win_get_buf(win)].filetype ~= 'NvimTree'
+  end
+
+  if suitable(preferred) then
+    return preferred
+  end
+
+  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    if suitable(win) then
+      return win
+    end
+  end
+end
+
 -- The commit this branch actually forked from, however far master has moved since.
 local function merge_base()
   local base = vim.fn.systemlist('git merge-base HEAD origin/master')[1]
@@ -597,6 +618,75 @@ local function setup_pickers(has_unified)
     end
   end
 
+  -- Open the file the preview cursor is on. Snacks tags every rendered line with its
+  -- file, side and line number, so with "jump_to_line" a removed line opens at the
+  -- number it had before the change and an added line at its new one. Historical diffs
+  -- pass false: their line numbers describe the file as it was, so following them today
+  -- would land somewhere arbitrary - the file itself is the useful part.
+  local function preview_opener(jump_to_line)
+    return function(picker)
+      local win = picker.preview.win.win
+
+      if not (win and vim.api.nvim_win_is_valid(win)) then
+        return
+      end
+
+      local buf = vim.api.nvim_win_get_buf(win)
+      local row = vim.api.nvim_win_get_cursor(win)[1]
+      local meta = (Snacks.picker.highlight.meta(buf) or {})[row]
+      local line = meta and meta.diff
+
+      if not line then
+        vim.notify('No diff line under the cursor', vim.log.levels.WARN)
+        return
+      end
+
+      local item = picker:current()
+      local root = (item and item.cwd) or picker.opts.cwd or vim.fn.getcwd()
+      local path = vim.fs.normalize(root .. '/' .. line.file)
+
+      if vim.fn.filereadable(path) == 0 then
+        vim.notify(line.file .. ' is not in the working tree', vim.log.levels.WARN)
+        return
+      end
+
+      local target = usable_window(picker.main)
+      picker:close()
+
+      vim.schedule(function()
+        if target then
+          vim.api.nvim_set_current_win(target)
+        elseif vim.bo.filetype == 'NvimTree' then
+          vim.cmd('vsplit') -- the tree is all there is; do not take over its window
+        end
+
+        vim.cmd('edit ' .. vim.fn.fnameescape(path))
+
+        if jump_to_line then
+          vim.api.nvim_win_set_cursor(0, { math.min(line.line or 1, vim.api.nvim_buf_line_count(0)), 0 })
+          vim.cmd('normal! zz')
+        end
+      end)
+    end
+  end
+
+  -- Same, from a double click: the mapping replaces the default click, so the row has to
+  -- be taken from the mouse rather than from wherever the cursor happens to sit.
+  local function clicked_opener(jump_to_line)
+    local open = preview_opener(jump_to_line)
+
+    return function(picker)
+      local win = picker.preview.win.win
+      local mouse = vim.fn.getmousepos()
+
+      if win and mouse.winid == win and mouse.line > 0 then
+        vim.api.nvim_win_set_cursor(win, { mouse.line, 0 })
+      end
+
+      open(picker)
+    end
+  end
+
   -- "o" goes one level in, "u" one level up: list -> diff (a normal buffer to scroll and
   -- search) -> back to the list. The commit pickers extend this a level further.
   local function diff_picker(opts)
@@ -608,7 +698,10 @@ local function setup_pickers(has_unified)
       previewers = { git = { args = { '-c', 'log.decorate=short' } } },
       actions = {
         preview_line_down = preview_line('<C-e>'),
-        preview_line_up = preview_line('<C-y>')
+        preview_line_up = preview_line('<C-y>'),
+        -- Commit views open the file without chasing the line; see preview_opener.
+        open_preview_line = preview_opener(false),
+        open_clicked_line = clicked_opener(false)
       },
       win = {
         list = {
@@ -623,10 +716,16 @@ local function setup_pickers(has_unified)
         },
         preview = {
           keys = {
-            ['o'] = 'focus_list',
+            -- "o" keeps meaning "one level in", which from the diff is the file itself;
+            -- "u" and "<C-h>" are the way back to the list.
+            ['o'] = 'open_preview_line',
             ['u'] = 'focus_list',
             ['<C-c>'] = 'cancel',
             ['<C-h>'] = 'focus_list', -- ...and the list to the left
+            -- Only bound here: in the list, <CR> and a double click are snacks' own
+            -- "open this entry" (and, in the commit list, "drill into this commit").
+            ['<CR>'] = 'open_preview_line',
+            ['<2-LeftMouse>'] = 'open_clicked_line',
             -- .vimrc has these as window moves, which would leave the picker and close it.
             ['<C-j>'] = 'preview_line_down',
             ['<C-k>'] = 'preview_line_up'
@@ -884,17 +983,10 @@ local function setup_pickers(has_unified)
     local origin = vim.api.nvim_get_current_win()
 
     local function return_to_origin()
-      if vim.api.nvim_win_is_valid(origin) and vim.bo[vim.api.nvim_win_get_buf(origin)].filetype ~= 'NvimTree' then
-        vim.api.nvim_set_current_win(origin)
-        return
-      end
+      local target = usable_window(origin)
 
-      for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-        local ft = vim.bo[vim.api.nvim_win_get_buf(win)].filetype
-        if ft ~= 'NvimTree' and vim.api.nvim_win_get_config(win).relative == '' then
-          vim.api.nvim_set_current_win(win)
-          return
-        end
+      if target then
+        vim.api.nvim_set_current_win(target)
       end
     end
 
@@ -1029,6 +1121,9 @@ local function setup_pickers(has_unified)
   local function worktree_picker(opts)
     return diff_picker(vim.tbl_deep_extend('force', {
       actions = {
+        -- Here the diff is against the working tree, so its line numbers are current.
+        open_preview_line = preview_opener(true),
+        open_clicked_line = clicked_opener(true),
         stage_selected = stage_selected,
         discard_selected = discard_selected,
         commit = function(picker)
