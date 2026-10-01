@@ -61,6 +61,69 @@ local function usable_window(preferred)
   end
 end
 
+-- Push the current branch. Sets the upstream on a branch that has none, so the first
+-- push of a new branch works like any other. Runs in the background: git push can take
+-- a while, and a blocked editor is worse than a late notification.
+local function push(opts)
+  local force = opts and opts.force
+  local branch = vim.fn.systemlist({ 'git', 'rev-parse', '--abbrev-ref', 'HEAD' })[1]
+
+  if vim.v.shell_error ~= 0 or not branch or branch == '' then
+    vim.notify('Not a git repository', vim.log.levels.ERROR)
+    return
+  end
+
+  if branch == 'HEAD' then
+    vim.notify('Detached HEAD: no branch to push', vim.log.levels.WARN)
+    return
+  end
+
+  local upstream = vim.fn.systemlist({ 'git', 'rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{upstream}' })[1]
+  local tracked = vim.v.shell_error == 0 and upstream or nil
+
+  local cmd = { 'git', 'push' }
+  if force then
+    table.insert(cmd, '--force-with-lease')
+  end
+  if not tracked then
+    vim.list_extend(cmd, { '--set-upstream', 'origin', branch })
+  end
+
+  local function run()
+    local target = tracked or ('origin/' .. branch .. ' (new upstream)')
+    vim.notify((force and 'Force-pushing ' or 'Pushing ') .. branch .. ' to ' .. target .. '...')
+
+    vim.system(cmd, { text = true }, vim.schedule_wrap(function(result)
+      local output = vim.trim((result.stderr or '') .. '\n' .. (result.stdout or ''))
+
+      if result.code ~= 0 then
+        vim.notify('git push failed:\n' .. output, vim.log.levels.ERROR)
+        return
+      end
+
+      -- git reports the result on the last line ("abc..def  branch -> branch", or
+      -- "Everything up-to-date"); the rest is progress noise.
+      local lines = vim.split(output, '\n')
+      local summary = branch .. ' -> ' .. target
+      for i = #lines, 1, -1 do
+        if vim.trim(lines[i]) ~= '' then
+          summary = vim.trim(lines[i])
+          break
+        end
+      end
+
+      vim.notify((force and 'Force-pushed: ' or 'Pushed: ') .. summary)
+    end))
+  end
+
+  if force then
+    -- --force-with-lease still rewrites the remote branch; worth a yes/no.
+    Snacks.picker.util.confirm('Force-push ' .. branch .. ' to ' .. (tracked or 'origin') .. '?', run)
+  else
+    run()
+  end
+end
+
 -- The commit this branch actually forked from, however far master has moved since.
 local function merge_base()
   local base = vim.fn.systemlist('git merge-base HEAD origin/master')[1]
@@ -319,7 +382,6 @@ local function setup_unified()
   vim.keymap.set('n', '<leader>vu', toggle_review('HEAD'),                            { desc = 'Review working tree (unified)' })
   vim.keymap.set('n', '<leader>vb', function() open_review(merge_base()) end,         { desc = 'Review branch vs master' })
   vim.keymap.set('n', '<leader>vl', function() open_review('HEAD~1') end,             { desc = 'Review last commit' })
-  vim.keymap.set('n', '<leader>vp', function() require('unified').pick_commit() end,  { desc = 'Review against a picked commit' })
   vim.keymap.set('n', '<leader>vq', close_review,                                     { desc = 'Close review' })
 
   vim.keymap.set('n', ']h', navigation.next_hunk,                                     { desc = 'Next hunk' })
@@ -1179,6 +1241,9 @@ local function setup_pickers(has_unified)
 
   vim.keymap.set('n', '<leader>vv', changed_files, { desc = 'Changed files, unstaged (Tab stages, C-a Tab stages all)' })
   vim.keymap.set('n', '<leader>vd', function() Snacks.picker.git_diff(worktree_picker({})) end,   { desc = 'All hunks (Tab stages)' })
+
+  vim.keymap.set('n', '<leader>vp', function() push() end,                 { desc = 'git push' })
+  vim.keymap.set('n', '<leader>vP', function() push({ force = true }) end, { desc = 'git push --force-with-lease' })
 end
 
 function M.setup()
