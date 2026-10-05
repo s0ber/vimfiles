@@ -35,9 +35,14 @@ local function define_highlights()
   vim.api.nvim_set_hl(0, 'SnacksDiffDelete',        { link = 'UnifiedDelete' })
   vim.api.nvim_set_hl(0, 'SnacksDiffAddLineNr',     { fg = line_nr, bg = scale(accent.add,    0.32) })
   vim.api.nvim_set_hl(0, 'SnacksDiffDeleteLineNr',  { fg = line_nr, bg = scale(accent.delete, 0.36) })
+  -- Bold twins of snacks' row colours, rebuilt whenever the colours change.
+  M.bold_variants = {}
+
   -- The words that actually changed within a changed line - a clearly stronger tint.
   vim.api.nvim_set_hl(0, 'SnacksDiffAddWord',       { bg = scale(accent.add,    0.48) })
   vim.api.nvim_set_hl(0, 'SnacksDiffDeleteWord',    { bg = scale(accent.delete, 0.55) })
+
+  M.bold_variants = {}
 end
 
 -- A window fit to open a file in: the preferred one when it still qualifies, otherwise
@@ -124,11 +129,29 @@ local function push(opts)
   end
 end
 
--- The commit this branch actually forked from, however far master has moved since.
-local function merge_base()
-  local base = vim.fn.systemlist('git merge-base HEAD origin/master')[1]
+-- The branch this one is based on: whatever origin's HEAD points at, else master or
+-- main, local or remote. Returns a short name for display and the ref to resolve.
+local function base_branch()
+  local default = vim.fn.systemlist({ 'git', 'symbolic-ref', '--short', 'refs/remotes/origin/HEAD' })[1]
+  local candidates = { default, 'origin/master', 'origin/main', 'master', 'main' }
 
-  if vim.v.shell_error ~= 0 or not base or base == '' then
+  for _, ref in ipairs(candidates) do
+    if ref and ref ~= '' then
+      vim.fn.system({ 'git', 'rev-parse', '--verify', '--quiet', ref .. '^{commit}' })
+
+      if vim.v.shell_error == 0 then
+        return ref:gsub('^origin/', ''), ref
+      end
+    end
+  end
+end
+
+-- The commit this branch actually forked from, however far the base has moved since.
+local function merge_base()
+  local _, ref = base_branch()
+  local base = ref and vim.fn.systemlist({ 'git', 'merge-base', 'HEAD', ref })[1]
+
+  if not base or base == '' then
     return 'master'
   end
 
@@ -873,8 +896,74 @@ local function setup_pickers(has_unified)
     }))
   end
 
+  -- A bold twin of a highlight group, created on demand. A group that sets only "bold"
+  -- does not render here, so the twin carries a colour too: the group's own, or the
+  -- editor's foreground when the group has none (several of snacks' row groups are
+  -- empty under rose-pine).
+  local function bolded(group)
+    if type(group) ~= 'string' then
+      return group
+    end
+
+    if not M.bold_variants[group] then
+      local hl = vim.api.nvim_get_hl(0, { name = group, link = false })
+      local twin = {
+        fg = hl.fg or vim.api.nvim_get_hl(0, { name = 'Normal', link = false }).fg,
+        bg = hl.bg,
+        italic = hl.italic,
+        underline = hl.underline,
+        bold = true
+      }
+      local name = 'GitBaseTipBold' .. group
+      vim.api.nvim_set_hl(0, name, twin)
+      M.bold_variants[group] = name
+    end
+
+    return M.bold_variants[group]
+  end
+
   commit_log = function(opts, selected)
+    -- Where this branch leaves the base branch: everything above that row is what the
+    -- branch adds. The *merge base* rather than the base branch's tip, because a base
+    -- that has moved on since has a tip which is not in this branch's log at all - and
+    -- when it has not moved, the two are the same commit. Resolved per open.
+    local _, ref = base_branch()
+    local tip = ref and vim.fn.systemlist({ 'git', 'merge-base', 'HEAD', ref })[1]
+    tip = (tip and tip ~= '') and tip or nil
+
+    local icons = Snacks.picker.config.get({}).icons
+
+    local function format_log(item, picker)
+      local row = Snacks.picker.format.git_log(item, picker)
+
+      if tip and item.commit and tip:sub(1, #item.commit) == item.commit then
+        -- Swap the commit dot for a branch glyph, same display width so the columns
+        -- stay lined up with every other row.
+        for _, chunk in ipairs(row) do
+          if type(chunk[1]) == 'string' and chunk[1]:find(icons.git.commit, 1, true) then
+            chunk[1] = chunk[1]:gsub(vim.pesc(icons.git.commit), '\u{e725} ', 1)
+            break
+          end
+        end
+
+        for _, chunk in ipairs(row) do
+          if type(chunk[1]) == 'string' then
+            chunk[2] = bolded(chunk[2])
+          elseif type(chunk.virt_text) == 'table' then
+            for _, part in ipairs(chunk.virt_text) do
+              part[2] = bolded(part[2])
+            end
+          elseif chunk.hl_group then
+            chunk.hl_group = bolded(chunk.hl_group)
+          end
+        end
+      end
+
+      return row
+    end
+
     Snacks.picker.git_log(vim.tbl_deep_extend('force', diff_picker({
+      format = format_log,
       on_show = selected and function(picker) select_commit(picker, selected) end or nil,
       confirm = function(picker, item)
         picker:close()
