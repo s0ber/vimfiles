@@ -14,6 +14,7 @@ NeoBundleFetch 'Shougo/neobundle.vim'
 
 " My Bundles here:
 NeoBundle 'vim-airline/vim-airline', 'master'            " light version of powerline
+NeoBundle 'vim-airline/vim-airline-themes'               " airline ships only its dark theme; the rest live here
 NeoBundle 'tpope/vim-repeat'             " repeat custom actions with .
 
 " text formatting

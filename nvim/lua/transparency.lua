@@ -1,17 +1,33 @@
+-- Keep the terminal background showing through. Rose-pine is asked for its own
+-- transparency mode (see appearance.lua), which covers everything it defines - this is
+-- the fallback for groups that come from somewhere else.
 local M = {}
 
--- Groups that paint a background over the terminal. Anything not defined by the current
--- colorscheme is skipped, so this list can name groups from plugins that may not be loaded.
+-- Groups that paint a background over the terminal. Anything the current colorscheme
+-- does not define is skipped, so this list can name groups from plugins that may not be
+-- loaded. Title groups are deliberately absent: they are small coloured chips, usually
+-- linked to a shared group, and clearing the background breaks the link and the look.
 local groups = {
-  'Normal', 'NormalNC', 'NormalFloat', 'FloatBorder', 'FloatTitle',
+  'Normal', 'NormalNC', 'NormalFloat', 'FloatBorder',
   'SignColumn', 'LineNr', 'EndOfBuffer', 'NonText', 'MsgArea',
   'WinSeparator', 'VertSplit', 'Folded', 'FoldColumn',
   'NvimTreeNormal', 'NvimTreeNormalNC', 'NvimTreeEndOfBuffer', 'NvimTreeWinSeparator',
   'TelescopeNormal', 'TelescopeBorder',
-  'SnacksNormal', 'SnacksNormalNC', 'SnacksWinBorder'
+  'SnacksNormal', 'SnacksNormalNC', 'SnacksWinBorder',
+  'TelescopePromptNormal', 'TelescopePromptBorder',
+  'TelescopeResultsNormal', 'TelescopeResultsBorder',
+  'TelescopePreviewNormal', 'TelescopePreviewBorder',
+  'SnacksNormal', 'SnacksNormalNC', 'SnacksWinBorder',
+  'SnacksPicker', 'SnacksPickerNormal', 'SnacksPickerBorder',
+  'SnacksPickerInput', 'SnacksPickerInputBorder', 'SnacksPickerList', 'SnacksPickerPreview',
+  'SnacksPickerPreviewBorder', 'SnacksPickerListBorder', 'SnacksPickerBoxBorder'
 }
 
 -- Drop just the background, keeping every other attribute the colorscheme set.
+--
+-- Via ":highlight", which merges into the existing group, rather than by handing the
+-- table from nvim_get_hl back to nvim_set_hl: that round trip can fail on attributes the
+-- getter reports but the setter will not accept, and the failure is silent.
 local function clear_background(group)
   local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = group, link = false })
 
@@ -19,8 +35,11 @@ local function clear_background(group)
     return
   end
 
-  hl.bg, hl.ctermbg = nil, nil
-  pcall(vim.api.nvim_set_hl, 0, group, hl)
+  local applied, err = pcall(vim.cmd, ('highlight %s guibg=NONE ctermbg=NONE'):format(group))
+
+  if not applied then
+    vim.notify(('transparency: could not clear %s: %s'):format(group, err), vim.log.levels.WARN)
+  end
 end
 
 local function clear_backgrounds()

@@ -1,27 +1,57 @@
 local M = {}
 
--- Multiply each RGB channel of a 24-bit colour, e.g. 0.25 gives a dark tint of it.
-local function scale(color, amount)
-  local r = math.floor(math.floor(color / 65536) % 256 * amount)
-  local g = math.floor(math.floor(color / 256) % 256 * amount)
-  local b = math.floor(color % 256 * amount)
+-- Blend two 24-bit colours; "ratio" is the share of the first one.
+local function mix(a, b, ratio)
+  local function channel(shift)
+    local x = math.floor(a / shift) % 256
+    local y = math.floor(b / shift) % 256
+    return math.floor(x * ratio + y * (1 - ratio))
+  end
 
-  return r * 65536 + g * 256 + b
+  return channel(65536) * 65536 + channel(256) * 256 + channel(1)
 end
 
--- Rose-pine moon accents: foam, love, gold. Three hues that cannot be confused for
--- one another, unlike the theme's own diff backgrounds.
-local accent = { add = 0x9ccfd8, delete = 0xeb6f92, change = 0xf6c177 }
+-- Foam, love and gold - three hues that cannot be confused for one another, unlike the
+-- theme's own diff backgrounds. Rose-pine moon for dark, rose-pine dawn for light.
+local accents = {
+  dark = { add = 0x9ccfd8, delete = 0xeb6f92, change = 0xf6c177 },
+  light = { add = 0x56949f, delete = 0xb4637a, change = 0xea9d34 }
+}
+
+local function accent()
+  return accents[vim.o.background] or accents.dark
+end
+
+-- A background tint of "colour": mixed toward black on a dark background and toward
+-- white on a light one, so one "strength" reads the same way in both.
+local function tint(colour, strength)
+  if vim.o.background == 'light' then
+    return mix(colour, 0xffffff, strength * 0.75)
+  end
+
+  return mix(colour, 0x000000, strength)
+end
+
+-- The same idea for text that should recede: darker on dark, paler on light.
+local function faded(colour, strength)
+  if vim.o.background == 'light' then
+    return mix(colour, 0xffffff, strength)
+  end
+
+  return mix(colour, 0x000000, strength)
+end
 
 local function define_highlights()
-  vim.api.nvim_set_hl(0, 'UnifiedAdd',    { bg = scale(accent.add,    0.24) })
-  vim.api.nvim_set_hl(0, 'UnifiedDelete', { bg = scale(accent.delete, 0.28) })
-  vim.api.nvim_set_hl(0, 'UnifiedChange', { bg = scale(accent.change, 0.26) })
+  local hue = accent()
+
+  vim.api.nvim_set_hl(0, 'UnifiedAdd',    { bg = tint(hue.add,    0.24) })
+  vim.api.nvim_set_hl(0, 'UnifiedDelete', { bg = tint(hue.delete, 0.28) })
+  vim.api.nvim_set_hl(0, 'UnifiedChange', { bg = tint(hue.change, 0.26) })
 
   -- The "N unchanged lines" fold lines: a dimmed shade of Comment, no background, so
   -- they read as gaps rather than content. Rose-pine's Folded uses the full text colour.
   local comment = vim.api.nvim_get_hl(0, { name = 'Comment', link = false })
-  vim.api.nvim_set_hl(0, 'UnifiedFolded', { fg = scale(comment.fg or 0x908caa, 0.6), bg = 'NONE', italic = true })
+  vim.api.nvim_set_hl(0, 'UnifiedFolded', { fg = faded(comment.fg or 0x908caa, 0.6), bg = 'NONE', italic = true })
 
   -- Snacks' "fancy" diff previews (,vv ,vd ,h ,vf). Its defaults paint *unchanged* context
   -- lines with DiffChange - rose-pine's muddy orange - which reads as if everything changed.
@@ -33,14 +63,14 @@ local function define_highlights()
   vim.api.nvim_set_hl(0, 'SnacksDiffContextLineNr', { link = 'LineNr' })
   vim.api.nvim_set_hl(0, 'SnacksDiffAdd',           { link = 'UnifiedAdd' })
   vim.api.nvim_set_hl(0, 'SnacksDiffDelete',        { link = 'UnifiedDelete' })
-  vim.api.nvim_set_hl(0, 'SnacksDiffAddLineNr',     { fg = line_nr, bg = scale(accent.add,    0.32) })
-  vim.api.nvim_set_hl(0, 'SnacksDiffDeleteLineNr',  { fg = line_nr, bg = scale(accent.delete, 0.36) })
+  vim.api.nvim_set_hl(0, 'SnacksDiffAddLineNr',     { fg = line_nr, bg = tint(hue.add,    0.32) })
+  vim.api.nvim_set_hl(0, 'SnacksDiffDeleteLineNr',  { fg = line_nr, bg = tint(hue.delete, 0.36) })
   -- Bold twins of snacks' row colours, rebuilt whenever the colours change.
   M.bold_variants = {}
 
   -- The words that actually changed within a changed line - a clearly stronger tint.
-  vim.api.nvim_set_hl(0, 'SnacksDiffAddWord',       { bg = scale(accent.add,    0.48) })
-  vim.api.nvim_set_hl(0, 'SnacksDiffDeleteWord',    { bg = scale(accent.delete, 0.55) })
+  vim.api.nvim_set_hl(0, 'SnacksDiffAddWord',       { bg = tint(hue.add,    0.48) })
+  vim.api.nvim_set_hl(0, 'SnacksDiffDeleteWord',    { bg = tint(hue.delete, 0.55) })
 
   M.bold_variants = {}
 end
