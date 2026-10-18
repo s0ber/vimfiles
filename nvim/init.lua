@@ -20,5 +20,10 @@ require('plugins.neoscroll').setup()
 require('plugins.snacks').setup()
 require('plugins.opencode').setup()
 require('plugins.git').setup()
+-- Ghostty multiplies a wheel click by 3 before nvim sees it (mouse-scroll-multiplier
+-- discrete:3), so the default "ver:3" lands 9 lines per click. One line per event makes
+-- that 3. Horizontal is left at the default.
+vim.opt.mousescroll = 'ver:1,hor:6'
+
 require('appearance').setup()
 require('transparency').setup()
