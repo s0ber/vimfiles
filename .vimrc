@@ -244,7 +244,7 @@ autocmd BufNewFile,BufRead *.tsx set filetype=typescript.tsx
 " autocomplete css
 autocmd FileType css set omnifunc=csscomplete#CompleteCSS
 
-autocmd VimEnter * NvimTreeOpen
+" autocmd VimEnter * NvimTreeOpen
 
 " allow JSX in normal JS files
 let g:jsx_ext_required = 0
