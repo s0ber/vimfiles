@@ -1,9 +1,9 @@
 {
+  "DeleteTrailingWhitespace": { "branch": "master", "commit": "62fe08aff3c3a020e483386f5c3e90c2e85e24b0" },
   "ag.vim": { "branch": "master", "commit": "4a0dd6e190f446e5a016b44fdaa2feafc582918e" },
   "auto-pairs": { "branch": "master", "commit": "39f06b873a8449af8ff6a3eee716d3da14d63a76" },
   "catppuccin": { "branch": "main", "commit": "8162a4bd9afb42837a655e404d1f937a87ba95e6" },
   "coc.nvim": { "branch": "master", "commit": "cd4a6b6ffb9f365a6abb99ebee4e51be996cdf8a" },
-  "DeleteTrailingWhitespace": { "branch": "master", "commit": "62fe08aff3c3a020e483386f5c3e90c2e85e24b0" },
   "dracula": { "branch": "master", "commit": "d7723a842a6cfa2f62cf85530ab66eb418521dc2" },
   "html5.vim": { "branch": "master", "commit": "7c9f6f38ce4f9d35db7eeedb764035b6b63922c6" },
   "kanagawa.nvim": { "branch": "master", "commit": "debe91547d7fb1eef34ce26a5106f277fbfdd109" },
