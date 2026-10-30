@@ -40,8 +40,8 @@ local specs = {
   'groenewege/vim-less',                 -- support for less
   'digitaltoad/vim-pug',                 -- support for pug (former Jade)
   'Eric-Song-Nop/vim-glslx',
-  -- master is frozen, but main needs nvim 0.12 - see lua/plugins/nvim-treesitter.lua
-  { 'nvim-treesitter/nvim-treesitter', branch = 'master' },
+  -- main needs nvim 0.12; master's queries break on 0.12 - see lua/plugins/nvim-treesitter.lua
+  { 'nvim-treesitter/nvim-treesitter', branch = 'main', build = ':TSUpdate' },
   'RRethy/nvim-treesitter-endwise',      -- automatically end code blocks
 
   'folke/snacks.nvim',
