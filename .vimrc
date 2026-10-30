@@ -1,104 +1,7 @@
-if has('vim_starting')
-  set nocompatible " be iMproved
+" Plugins are managed by lazy.nvim in ~/.config/nvim/lua/packages.lua, loaded after this file.
 
-  " required:
-  set runtimepath+=~/.vim/bundle/neobundle.vim/
-endif
-
-" required:
-call neobundle#begin(expand('~/.vim/bundle'))
-
-" Let NeoBundle manage NeoBundle
-" required:
-NeoBundleFetch 'Shougo/neobundle.vim'
-
-" My Bundles here:
-NeoBundle 'vim-airline/vim-airline', 'master'            " light version of powerline
-NeoBundle 'vim-airline/vim-airline-themes'               " airline ships only its dark theme; the rest live here
-NeoBundle 'tpope/vim-repeat'             " repeat custom actions with .
-
-" text formatting
-NeoBundle 'jiangmiao/auto-pairs'         " autoclose quotes, brackets, etc
-NeoBundle 'tpope/vim-surround'           " quote selected text
-NeoBundle 'tomtom/tcomment_vim'          " comment and uncomment
-NeoBundle 'DeleteTrailingWhitespace'     " remove trailing whitespaces
-NeoBundle 'mg979/vim-visual-multi', { 'branch': 'master' } " sublime-inspired multiple cursors
-" NeoBundle 'tpope/vim-endwise'            " automatically end code blocks
-" NeoBundle 'tpope/vim-unimpaired'         " mappings for paired actions
-
-" integration with ag
-NeoBundle 'rking/ag.vim'
-NeoBundle 'gabesoft/vim-ags'
-
-" smooth scrolling
-NeoBundle 'karb94/neoscroll.nvim'
-
-" fuzzy search
-" NeoBundle 'ctrlpvim/ctrlp.vim'               " fuzzy file search
-" NeoBundle 'FelikZ/ctrlp-py-matcher'
-
-NeoBundle 'nvim-telescope/telescope-fzf-native.nvim', { 'build': 'make' }
-NeoBundle 'nvim-lua/plenary.nvim'
-NeoBundle 'nvim-telescope/telescope.nvim', { 'branch': '0.1.x' }
-
-" file tree
-NeoBundle 'nvim-tree/nvim-tree.lua'
-
-" filetypes support
-NeoBundle 'kchmck/vim-coffee-script'     " support for coffeescript
-NeoBundle 'vim-ruby/vim-ruby'            " support for ruby (always use latest vim-ruby)
-NeoBundle 'tpope/vim-haml'               " support for haml
-NeoBundle 'slim-template/vim-slim'       " support for slim
-NeoBundle 'othree/html5.vim'             " support for html5
-NeoBundle 'derekwyatt/vim-scala'         " support for scala
-NeoBundle 'groenewege/vim-less'          " support for less
-NeoBundle 'digitaltoad/vim-pug'          " support for pug (former Jade)
-" NeoBundle 'tikhomirov/vim-glsl'
-NeoBundle 'Eric-Song-Nop/vim-glslx'
-NeoBundle 'nvim-treesitter/nvim-treesitter'
-
-NeoBundle 'folke/snacks.nvim'
-NeoBundle 'NickvanDyke/opencode.nvim', 'main'
-
-" git
-" NeoBundle 'axkirillov/unified.nvim'         " inline unified diffs - parked, snacks covers it; uncomment to bring the review back
-
-NeoBundle 'RRethy/nvim-treesitter-endwise' " automatically end code blocks
-
-" colorscheme
-NeoBundle 'vv9k/vim-github-dark'
-NeoBundle 'dracula/vim.git'
-NeoBundle 'gmr458/vscode_modern_theme.nvim'
-NeoBundle 'folke/tokyonight.nvim'
-NeoBundle 'catppuccin/nvim'
-NeoBundle 'rose-pine/neovim'
-NeoBundle 'nyoom-engineering/oxocarbon.nvim'
-NeoBundle 'rebelot/kanagawa.nvim'
-NeoBundle 'EdenEast/nightfox.nvim'
-NeoBundle 'loctvl842/monokai-pro.nvim'
-
-" typescript IDE 2
-NeoBundle 'neoclide/coc.nvim', { 'branch': 'release', 'build': 'npm ci' }
-
-" syntax errors highlight
-" NeoBundle 'ngmy/vim-rubocop' " rubocop warnings
-
-" tests runners
-NeoBundle 'vim-test/vim-test'
-
-" icons
-" NeoBundle 'ryanoasis/vim-devicons'
-
-" workspace
-call neobundle#end()
-
-" required:
 syntax enable
 filetype plugin indent on
-
-" If there are uninstalled bundles found on startup, this will conveniently
-" prompt you to install them.
-NeoBundleCheck
 
 set langmenu=en_US
 let $LANG = 'en_US'
@@ -126,8 +29,7 @@ set expandtab
 set splitbelow
 set splitright
 
-" colorscheme settings
-colorscheme rose-pine-moon
+" colorscheme settings - the colorscheme itself is applied by ~/.config/nvim/lua/appearance.lua
 " set notermguicolors
 
 " search tweaks
@@ -223,20 +125,16 @@ endfunction
 
 nmap <silent> <Leader>of :NvimTreeFindFile<Cr><C-w>=
 
-if neobundle#tap('vim-test')
-  let test#strategy = 'shtuff'
-  let g:shtuff_receiver = 'vimtest'
-  let test#ruby#rspec#executable = 'bin/docker_rspec'
-  " let g:test#strategy = 'neovim_sticky'
-  " let test#neovim_sticky#reopen_window = 1
-  " let test#neovim#term_position = 'vert'
+let test#strategy = 'shtuff'
+let g:shtuff_receiver = 'vimtest'
+let test#ruby#rspec#executable = 'bin/docker_rspec'
+" let g:test#strategy = 'neovim_sticky'
+" let test#neovim_sticky#reopen_window = 1
+" let test#neovim#term_position = 'vert'
 
-  nmap <silent> <Leader>s :TestNearest<Cr>
-  nmap <silent> <Leader>S :TestFile<Cr>
-  nmap <silent> <Leader>l :TestLast<Cr>
-
-  call neobundle#untap()
-endif
+nmap <silent> <Leader>s :TestNearest<Cr>
+nmap <silent> <Leader>S :TestFile<Cr>
+nmap <silent> <Leader>l :TestLast<Cr>
 
 " enable syntax highlighting for tsx
 autocmd BufNewFile,BufRead *.tsx set filetype=typescript.tsx

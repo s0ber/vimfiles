@@ -53,7 +53,7 @@ function M.setup()
     desc = 'Keep the terminal background showing through'
   })
 
-  -- ".vimrc" already ran "colorscheme", so the current one needs doing by hand.
+  -- appearance.lua already ran "colorscheme", so the current one needs doing by hand.
   clear_backgrounds()
 end
 

@@ -6,12 +6,10 @@ vim.g.loaded_netrwPlugin = 1
 vim.opt.runtimepath:prepend(vim.fn.expand("~/.vim"))
 vim.opt.runtimepath:append(vim.fn.expand("~/.vim/after"))
 
--- Set packpath to match runtimepath (for plugin compatibility)
-vim.opt.packpath = vim.opt.runtimepath:get()
-
 -- Source your old .vimrc
 -- vim.cmd("source " .. vim.fn.expand("~/.vimrc"))
 vim.cmd('source ~/.vimrc')
+require('packages').setup()
 
 require('plugins.nvim-tree').setup()
 require('plugins.nvim-treesitter').setup()
