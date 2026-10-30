@@ -115,7 +115,15 @@ local function apply(mode, force)
 end
 
 -- "defaults read" exits non-zero when the key is unset, which is how macOS says "light".
+-- Only macOS has a system appearance to follow; everywhere else (Omarchy has no reliable
+-- light/dark signal) it is always dark.
+local is_mac = vim.fn.has('mac') == 1
+
 local function system_mode()
+  if not is_mac then
+    return 'dark'
+  end
+
   local out = vim.fn.system({ 'defaults', 'read', '-g', 'AppleInterfaceStyle' })
 
   return (vim.v.shell_error == 0 and out:lower():find('dark')) and 'dark' or 'light'
@@ -139,6 +147,10 @@ function M.setup()
   -- focus is enough - no polling, no timer.
   vim.api.nvim_create_autocmd({ 'FocusGained', 'VimResume' }, {
     callback = function()
+      if not is_mac then
+        return
+      end
+
       vim.system({ 'defaults', 'read', '-g', 'AppleInterfaceStyle' }, { text = true }, vim.schedule_wrap(function(result)
         apply((result.code == 0 and (result.stdout or ''):lower():find('dark')) and 'dark' or 'light')
       end))
