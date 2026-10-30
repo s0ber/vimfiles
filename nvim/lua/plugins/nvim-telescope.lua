@@ -29,13 +29,54 @@ local function send_to_qflist_and_select(prompt_bufnr)
   end
 end
 
+-- builtin.oldfiles puts every buffer of the session (":buffers!", unlisted ones included) ahead of
+-- the shada history, so files that plugins load in the background end up on top. Only take listed
+-- buffers that were actually visited, most recent first, then the shada history.
+local function recent_files()
+  local conf = require('telescope.config').values
+  local finders = require('telescope.finders')
+  local make_entry = require('telescope.make_entry')
+  local pickers = require('telescope.pickers')
+
+  local cwd = vim.loop.cwd() .. '/'
+  local current_file = vim.api.nvim_buf_get_name(0)
+  local results, seen = {}, {}
+
+  local function add(file)
+    if file == '' or file == current_file or seen[file] or not vim.startswith(file, cwd) then
+      return
+    end
+
+    local stat = vim.loop.fs_stat(file)
+    if stat and stat.type == 'file' then
+      seen[file] = true
+      table.insert(results, file)
+    end
+  end
+
+  local buffers = vim.tbl_filter(function(buffer)
+    return buffer.lastused > 0
+  end, vim.fn.getbufinfo({ buflisted = 1 }))
+  table.sort(buffers, function(a, b) return a.lastused > b.lastused end)
+
+  for _, buffer in ipairs(buffers) do add(buffer.name) end
+  for _, file in ipairs(vim.v.oldfiles) do add(file) end
+
+  pickers.new({}, {
+    prompt_title = 'Recent files',
+    finder = finders.new_table({ results = results, entry_maker = make_entry.gen_from_file({}) }),
+    sorter = conf.file_sorter({}),
+    previewer = conf.grep_previewer({}),
+  }):find()
+end
+
 function M.setup()
   local builtin = require('telescope.builtin')
   local action_state = require("telescope.actions.state")
 
   -- Keep some telescope-specific mappings for specialized tasks
   vim.keymap.set('n', '<c-p>', builtin.find_files, { desc = 'Telescope find files' })
-  vim.keymap.set('n', '<Tab>', builtin.oldfiles, { desc = 'Recent files' })
+  vim.keymap.set('n', '<Tab>', recent_files, { desc = 'Recent files' })
   vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Telescope live grep' })
   vim.keymap.set('n', '<leader>ag', builtin.live_grep, { desc = 'Telescope live grep' })
   vim.keymap.set('n', '<leader>g', builtin.grep_string, { desc = 'Telescope grep selected text' })
