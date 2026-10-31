@@ -5,5 +5,8 @@
   "diagnostic.virtualText": true,
   "diagnostic.virtualTextCurrentLineOnly": false,
   "eslint.packageManager": "npm",
-  "tsserver.implicitProjectConfig.checkJs": true
+  "tsserver.implicitProjectConfig.checkJs": true,
+  "json.schemaDownload.trustedDomains": {
+    "https://www.schemastore.org": true
+  }
 }
