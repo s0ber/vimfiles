@@ -193,7 +193,7 @@ nnoremap * y*
 " don't use esc to quit insert mode
 imap <c-c> <esc>
 nnoremap <Esc> <Nop>
-nnoremap <C-c> :nohlsearch<CR>
+nnoremap <C-c> :nohlsearch<Bar>call coc#float#close_all()<CR>
 
 " ariline icons
 let g:airline_powerline_fonts = 1
