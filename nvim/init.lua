@@ -9,6 +9,7 @@ vim.opt.runtimepath:append(vim.fn.expand("~/.vim/after"))
 -- Source your old .vimrc
 -- vim.cmd("source " .. vim.fn.expand("~/.vimrc"))
 vim.cmd('source ~/.vimrc')
+require('ssh_clipboard').setup()
 require('packages').setup()
 
 require('plugins.nvim-tree').setup()

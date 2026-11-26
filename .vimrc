@@ -54,7 +54,7 @@ if has("nvim-0.5.0") || has("patch-8.1.1564")
   set signcolumn=number
 endif
 let g:coc_force_debug = 1
-let g:coc_global_extensions = ['coc-tsserver', 'coc-eslint', 'coc-json']
+let g:coc_global_extensions = ['coc-tsserver', 'coc-eslint', 'coc-json', 'coc-solargraph']
 
 " Let's not be retarded
 let mapleader = ','
@@ -181,7 +181,7 @@ nmap <C-l> <C-w>l
 nmap <C-]> <Plug>(coc-diagnostic-next)
 nmap <C-[> <Plug>(coc-diagnostic-prev)
 
-set clipboard=unnamed
+set clipboard=unnamedplus
 
 " copy current file path to register
 nmap cp :let @+ = expand("%")<CR>
