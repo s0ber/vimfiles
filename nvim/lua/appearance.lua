@@ -140,7 +140,9 @@ end
 -- TermResponse handler reads the answer: nvim does re-ask by itself when the terminal
 -- reports a theme change, but stops applying the answers once a script has set
 -- 'background' - rose-pine does. A local Omarchy terminal answers dark; Ghostty over SSH
--- from the Mac answers as macOS is set.
+-- from the Mac answers as macOS is set. Those theme-change answers are followed on macOS
+-- too, since Ghostty switches with macOS: they arrive the moment it does, while focus
+-- only comes later.
 local is_mac = vim.fn.has('mac') == 1
 local terminal_mode
 
@@ -235,8 +237,8 @@ function M.setup()
     end
   })
 
-  -- The appearance can only change while nvim is in the background, so checking on
-  -- focus is enough - no polling, no timer.
+  -- A terminal that reports theme changes is followed as they happen (see system_mode);
+  -- for one that does not, checking on focus is enough - no polling, no timer.
   vim.api.nvim_create_autocmd({ 'FocusGained', 'VimResume' }, {
     callback = function(event)
       if forced and event.event == 'VimResume' then
@@ -293,10 +295,7 @@ function M.setup()
       end
 
       terminal_mode = mode
-
-      if not is_mac then
-        apply(mode)
-      end
+      apply(mode)
     end,
     desc = 'Follow the terminal background'
   })
