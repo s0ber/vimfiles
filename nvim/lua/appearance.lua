@@ -1,8 +1,9 @@
--- Follow the macOS appearance: rose-pine moon when the system is dark, rose-pine dawn
--- when it is light. Ghostty switches its own theme on the same signal (see its config),
--- and since Normal has no background here, the two have to agree or the terminal shows
--- through with the wrong foregrounds. ",b" flips to the other mode regardless (see
--- set_mode for how the terminal is kept in agreement).
+-- Follow the system appearance: rose-pine moon when it is dark, rose-pine dawn when it is
+-- light. On macOS that is the macOS setting, which Ghostty follows too (see its config);
+-- elsewhere it is whatever the terminal reports - over SSH from the Mac, Ghostty again.
+-- Since Normal has no background here, nvim and the terminal have to agree or the
+-- terminal shows through with the wrong foregrounds. ",b" flips to the other mode
+-- regardless (see set_mode for how the terminal is kept in agreement).
 local M = {}
 
 local schemes = { dark = 'rose-pine-moon', light = 'rose-pine-dawn' }
@@ -133,13 +134,35 @@ local function apply(mode, force)
 end
 
 -- "defaults read" exits non-zero when the key is unset, which is how macOS says "light".
--- Only macOS has a system appearance to follow; everywhere else (Omarchy has no reliable
--- light/dark signal) it is always dark.
+-- Anywhere else there is no system appearance to ask, so the terminal's background stands
+-- in for it. nvim asks the terminal before the config runs and sets 'background' from the
+-- answer (so .vimrc must not set it). After that it is asked here, on focus, and the
+-- TermResponse handler reads the answer: nvim does re-ask by itself when the terminal
+-- reports a theme change, but stops applying the answers once a script has set
+-- 'background' - rose-pine does. A local Omarchy terminal answers dark; Ghostty over SSH
+-- from the Mac answers as macOS is set.
 local is_mac = vim.fn.has('mac') == 1
+local terminal_mode
+
+-- The mode an OSC 11 answer describes, worked out the way nvim does: light when the
+-- background's luminance is at least a half.
+local function answered_mode(sequence)
+  local r, g, b = sequence:match('^\027%]11;rgba?:(%x+)/(%x+)/(%x+)')
+
+  if not r then
+    return nil
+  end
+
+  local function channel(hex)
+    return tonumber(hex, 16) / (16 ^ #hex - 1)
+  end
+
+  return 0.299 * channel(r) + 0.587 * channel(g) + 0.114 * channel(b) < 0.5 and 'dark' or 'light'
+end
 
 local function system_mode()
   if not is_mac then
-    return 'dark'
+    return terminal_mode or 'dark'
   end
 
   local out = vim.fn.system({ 'defaults', 'read', '-g', 'AppleInterfaceStyle' })
@@ -152,6 +175,14 @@ end
 -- to the terminal's own theme.
 local function paint_terminal(mode)
   vim.api.nvim_ui_send(mode and ('\027]11;#%06x\007'):format(pages[mode]) or '\027]111\007')
+end
+
+-- Ask the terminal for its background (OSC 11); the TermResponse handler reads the answer.
+-- nvim holds what it writes to the terminal until the screen is flushed, and only a full
+-- redraw reliably does that.
+local function ask_terminal()
+  vim.api.nvim_ui_send('\027]11;?\007')
+  vim.cmd('redraw!')
 end
 
 -- A choice made by hand. Choosing the system's own mode ends a forced one.
@@ -179,9 +210,18 @@ local function set_mode(mode)
 
   -- "force": the cursor group has to be defined even if the mode itself is unchanged.
   apply(mode, true)
+
+  -- The terminal may have switched theme while its page was ours, which makes "mode" a
+  -- guess: check it.
+  if was_forced and not forced then
+    ask_terminal()
+  end
 end
 
 function M.setup()
+  -- What nvim made of the terminal's answer, before anything here touches 'background'.
+  terminal_mode = vim.o.background
+
   -- Synchronously at startup, so a light session never flashes the dark colours.
   apply(system_mode())
 
@@ -199,15 +239,15 @@ function M.setup()
   -- focus is enough - no polling, no timer.
   vim.api.nvim_create_autocmd({ 'FocusGained', 'VimResume' }, {
     callback = function(event)
-      if forced then
-        if event.event == 'VimResume' then
-          paint_terminal(current)
-        end
-
+      if forced and event.event == 'VimResume' then
+        paint_terminal(current)
         return
       end
 
-      if not is_mac then
+      -- The terminal stands in for the system (see system_mode). While forced the
+      -- question is only whether it still shows the forced page.
+      if forced or not is_mac then
+        ask_terminal()
         return
       end
 
@@ -215,14 +255,50 @@ function M.setup()
         apply((result.code == 0 and (result.stdout or ''):lower():find('dark')) and 'dark' or 'light')
       end))
     end,
-    desc = 'Follow the macOS appearance'
+    desc = 'Follow the system appearance'
   })
 
-  -- Something else setting 'background' (a terminal query, :set background=...) switches
-  -- the colorscheme to match rather than leaving the two inconsistent.
+  -- Something else setting 'background' (nvim's own reading of the terminal, :set
+  -- background=...) switches the colorscheme to match rather than leaving the two
+  -- inconsistent - except over a forced mode, which only set_mode ends.
   vim.api.nvim_create_autocmd('OptionSet', {
     pattern = 'background',
-    callback = function() apply(vim.v.option_new) end
+    callback = function()
+      if vim.v.option_new ~= current then
+        apply(forced and current or vim.v.option_new, forced)
+      end
+    end
+  })
+
+  -- The terminal's answers about its background (see system_mode).
+  vim.api.nvim_create_autocmd('TermResponse', {
+    callback = function(event)
+      local mode = answered_mode(event.data.sequence or '')
+
+      if not mode then
+        return
+      end
+
+      -- While forced the terminal's page is ours, so an answer with it says nothing new; a
+      -- different one means the terminal switched theme and dropped it: paint it again
+      -- (and flush, see ask_terminal).
+      if forced then
+        if mode ~= current then
+          terminal_mode = mode
+          paint_terminal(current)
+          vim.cmd('redraw!')
+        end
+
+        return
+      end
+
+      terminal_mode = mode
+
+      if not is_mac then
+        apply(mode)
+      end
+    end,
+    desc = 'Follow the terminal background'
   })
 
   -- The shell gets the terminal back with its own background.
@@ -235,7 +311,7 @@ function M.setup()
     desc = 'Restore the terminal background'
   })
 
-  -- ":Appearance light|dark" to force one, ":Appearance" to go back to following macOS.
+  -- ":Appearance light|dark" to force one, ":Appearance" to go back to following the system.
   vim.api.nvim_create_user_command('Appearance', function(opts)
     set_mode(opts.args ~= '' and opts.args or system_mode())
   end, { nargs = '?', complete = function() return { 'light', 'dark' } end })
